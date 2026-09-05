@@ -12,7 +12,6 @@ Desarrollar una plataforma que permita gestionar el ciclo de vida de los PGC, de
 
 * Backend: Node.js
 * Base de datos: MySQL
-* Frontend: HTML, CSS, JavaScript
 * Metodología: Scrum
 
 ## Equipo
