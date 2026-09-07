@@ -1,0 +1,5 @@
+//Se encarga de definir las rutas de las APIs
+
+//Example:
+router.post('/login', authController.login);
+router.post('/register', authController.register);

@@ -1,0 +1,8 @@
+//Se encarga de recibir la peticion HTtP y se encarga de devolver una respuesta:
+
+//Example:
+// const login = async (req, res) => {
+//     const result = await authService.login(req.body);
+
+//     res.status(200).json(result);
+// };
