@@ -1,28 +1,13 @@
 {
   "name": "pgc_project-be",
   "version": "1.0.0",
-  "description": "Sistema web orientado a la gestión, seguimiento y continuidad de los **Proyectos de Gestión del Conocimiento (PGC)**.",
-  "homepage": "https://github.com/AlejandroTriana-git/PGC_PROJECT#readme",
-  "bugs": {
-    "url": "https://github.com/AlejandroTriana-git/PGC_PROJECT/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AlejandroTriana-git/PGC_PROJECT.git"
-  },
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
+  "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.24.4"
-  }
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
