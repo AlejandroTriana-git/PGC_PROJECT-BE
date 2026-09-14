@@ -1,6 +1,6 @@
 // aca verificamos quien es el usuario para asi poder ingresar gracias a los tokens
 
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
 // con esta funcion se verifica que halla un token valido para el ingreso y si no da el error 401 respectivamente
 function verificarToken(req, res, next) {
@@ -21,4 +21,4 @@ function verificarToken(req, res, next) {
   }
 }
 
-module.exports = verificarToken;
+export default verificarToken;

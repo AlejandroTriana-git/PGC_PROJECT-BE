@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database";
 
 // aca se recrea la tabla `students` de la bd.
 // revisar: id_user aqui NO tiene UNIQUE en el script para bd, o sea que a nivel de
@@ -33,4 +33,4 @@ const Estudiante = sequelize.define(
   }
 );
 
-module.exports = Estudiante;
+export default Estudiante;

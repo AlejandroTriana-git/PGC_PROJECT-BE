@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database";
 
 // aca se recrea la tabla `users` del script SQL.
 // advertencia: esta tabla no tiene columna de nombre ni de "activo" 

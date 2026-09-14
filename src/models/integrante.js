@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database";
 
 // aca es una tabla puente donde que estudiantes conforman un PGC.
 // inexistente aun en el script SQL.
@@ -32,4 +32,4 @@ const Integrante = sequelize.define(
   }
 );
 
-module.exports = Integrante;
+export default Integrante;

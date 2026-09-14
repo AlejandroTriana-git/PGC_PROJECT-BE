@@ -1,11 +1,11 @@
-const sequelize = require("../config/database");
-const Rol = require("./rol.model");
-const Usuario = require("./usuario.model");
-const Estudiante = require("./estudiante.model");
-const BlacklistedToken = require("./blacklisted_token.model");
-const Pgc = require("./pgc.model");
-const Propuesta = require("./propuesta.model");
-const Integrante = require("./integrante.model");
+import sequelize from "../config/database.js";
+import Rol from "./rol.js";
+import Usuario from "./usuario.js";
+import Estudiante from "./estudiante.js";
+import BlacklistedToken from "./blacklisted_token.js";
+import Pgc from "./pgc.js";
+import Propuesta from "./propuesta.js";
+import Integrante from "./integrante.js";
 
 // Rol 1-N Usuario
 Rol.hasMany(Usuario, { foreignKey: "id_rol" });
@@ -30,7 +30,7 @@ Propuesta.belongsTo(Estudiante, { foreignKey: "estudiante_id" });
 Pgc.belongsToMany(Estudiante, { through: Integrante, foreignKey: "pgc_id" });
 Estudiante.belongsToMany(Pgc, { through: Integrante, foreignKey: "estudiante_id" });
 
-module.exports = {
+export {
   sequelize,
   Rol,
   Usuario,

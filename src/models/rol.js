@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database";
 
 // aca se recrea la tabla `rol` del script SQL.
 const Rol = sequelize.define(
@@ -21,4 +21,4 @@ const Rol = sequelize.define(
   }
 );
 
-module.exports = Rol;
+export default Rol;

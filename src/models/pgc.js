@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database";
 
 // Campos segun reglas ya definidas:
 // Titulo, Problema, Justificacion, Objetivos, Solucion quedan de solo lectura
@@ -57,4 +57,4 @@ const Pgc = sequelize.define(
   }
 );
 
-module.exports = Pgc;
+export default Pgc;

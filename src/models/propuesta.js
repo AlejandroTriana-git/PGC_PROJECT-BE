@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database";
 
 // Propuesta inicial que radica el estudiante y que el encargado
 // de ciclo aprueba o rechaza (HU-08). Al aprobarse, da origen a un Pgc.
@@ -53,4 +53,4 @@ const Propuesta = sequelize.define(
   }
 );
 
-module.exports = Propuesta;
+export default Propuesta;

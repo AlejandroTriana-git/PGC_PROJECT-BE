@@ -1,5 +1,5 @@
-const { DataTypes } = require("sequelize");
-const sequelize = require("../config/database");
+import { DataTypes } from "sequelize";
+import sequelize from "../config/database";
 
 // aca se recrea la tabla `blacklisted_tokens` de la bd.
 // Sirve para invalidar un JWT antes de que expire por si solo , basicamente cerrar sesion
@@ -31,4 +31,4 @@ const BlacklistedToken = sequelize.define(
   }
 );
 
-module.exports = BlacklistedToken;
+export default BlacklistedToken;
