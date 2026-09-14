@@ -1,6 +1,6 @@
 // aca verificamos quien es el usuario para asi poder ingresar gracias a los tokens
 
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
 // con esta funcion se verifica que halla un token valido para el ingreso y si no da el error 401 respectivamente
 function verificarToken(req, res, next) {
@@ -14,11 +14,11 @@ function verificarToken(req, res, next) {
 // esto es para que no se caiga la app y verifica si la "firma" es igual a la original
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = payload; // { id, correo, rol }
+    req.usuario = payload; // { id, mail_user, rol }
     next();
   } catch (error) {
     return res.status(401).json({ mensaje: "Token inválido o expirado" });
   }
 }
 
-module.exports = verificarToken;
+export default verificarToken;

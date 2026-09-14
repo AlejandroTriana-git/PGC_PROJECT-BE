@@ -17,4 +17,4 @@ function autorizarRoles(...rolesPermitidos) {
   };
 }
 
-module.exports = autorizarRoles;
+export default autorizarRoles;
