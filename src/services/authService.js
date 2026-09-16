@@ -1,13 +1,13 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { findByEmail } from '../repositories/authRepository.js';
-
+import encontrarPorEmail  from '../repositories/authRepository.js';
+import {encontrarAsignacionesPorId} from '../repositories/asignacionesRepository.js';
 dotenv.config();
 
 
-const login = async (data) => {
-    const usuario = await findByEmail(data.correo);
+export const login = async (data) => {
+    const usuario = await encontrarPorEmail(data.correo);
 
     if (!usuario) {
         throw { status: 404, mensaje: 'Correo electrónico no registrado' };
@@ -19,17 +19,17 @@ const login = async (data) => {
         throw { status: 401, mensaje: 'Contraseña incorrecta' };
     }
 
-    const rolTraducido = usuario.name_role;
-
-    // Obtener el nombre real
-    const nombreReal = usuario.name_student || usuario.mail_user;
+    const {encargado_de, jurado_de} = await encontrarAsignacionesPorId(usuario.id_user);
+      
 
     const token = jwt.sign(
         {
             id: usuario.id_user,
             correo: usuario.mail_user,
-            rol: rolTraducido,
-            nombre: nombreReal
+            rol: usuario.name_role,
+            nombre: usuario.full_name,
+            encargado_de: encargado_de,
+            jurado_de: jurado_de
         },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN }
@@ -38,11 +38,12 @@ const login = async (data) => {
     return {
         token: token,
         id: usuario.id_user,
-        nombre: nombreReal,
+        nombre: usuario.full_name,
         correo: usuario.mail_user,
-        rol: rolTraducido,
+        rol: usuario.name_role,
+        encargado_de: encargado_de,
+        jurado_de: jurado_de,
         mensaje: 'Inicio de sesión exitoso'
     };
 };
 
-export { login };
