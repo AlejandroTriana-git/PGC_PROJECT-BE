@@ -3,3 +3,26 @@
 //Example:
 router.post('/login', authController.login);
 router.post('/register', authController.register);
+
+
+//Algo a mencionar es que con los nuevos middlewares, se usaran de la sigueinte manera:
+
+import verificarToken from '../middlewares/autenticar.middleware.js';
+import autorizarRoles from '../middlewares/autorizarRoles.middleware.js';
+import { autorizarEncargadoDePropuesta } from '../middlewares/autorizarEncargado.middleware.js';
+
+router.patch(
+  '/propuestas/:id/aprobar',
+  verificarToken,                        // ¿hay token válido?
+  autorizarRoles('Profesor'),            // ¿es Profesor? (rol base, sin cambios)
+  autorizarEncargadoDePropuesta(),       // ¿es el encargado DE ESTA propuesta puntual?
+  propuestasController.aprobar
+);
+
+router.patch(
+  '/propuestas/:id/rechazar',
+  verificarToken,
+  autorizarRoles('Profesor'),
+  autorizarEncargadoDePropuesta(),
+  propuestasController.rechazar
+);
