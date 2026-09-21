@@ -19,34 +19,28 @@ const validarPDF = (pdf) => {
 
 // Crear propuesta
 export const crearPropuesta = async (data, id_user) => {
-    // 1. Validar campos
     validarCampos(data);
     validarPDF(data.pdf_format_url);
 
-    // 2. Buscar estudiante líder
     const lider = await propuestaRepository.buscarEstudiantePorId(id_user);
     if (!lider) {
         throw { status: 404, mensaje: 'El líder no es estudiante' };
     }
 
-    // 3. Buscar ciclo
     const ciclo = await propuestaRepository.buscarCicloPorId(data.id_cycle);
     if (!ciclo) {
         throw { status: 404, mensaje: 'El ciclo no existe' };
     }
 
-    // 4. Validar que el líder no tenga propuesta activa
     const propuestaActiva = await propuestaRepository.buscarPropuestaActiva(lider.id_student, data.id_cycle);
     if (propuestaActiva) {
         throw { status: 400, mensaje: 'El líder ya tiene una propuesta activa en este ciclo' };
     }
 
-    // 5. Validar integrantes
     if (data.integrantes.length > ciclo.max_members) {
         throw { status: 400, mensaje: `El máximo de integrantes es ${ciclo.max_members}` };
     }
 
-    // 6. Crear propuesta
     const id_proposal = await propuestaRepository.crearPropuesta({
         id_leader: lider.id_student,
         id_cycle: data.id_cycle,
@@ -59,10 +53,8 @@ export const crearPropuesta = async (data, id_user) => {
         pdf_format_url: data.pdf_format_url
     });
 
-    // 7. Insertar al líder en proposal_students
     await propuestaRepository.insertarIntegrante(id_proposal, lider.id_student);
 
-    // 8. Insertar a los demás integrantes
     for (const id_integrante of data.integrantes) {
         const integrante = await propuestaRepository.buscarEstudiantePorId(id_integrante);
         if (!integrante) {
@@ -75,4 +67,28 @@ export const crearPropuesta = async (data, id_user) => {
     }
 
     return { id_proposal, mensaje: 'Propuesta radicada exitosamente' };
+};
+
+// Reenviar propuesta
+export const reenviarPropuesta = async (id_proposal, data, id_user) => {
+    validarCampos(data);
+    validarPDF(data.pdf_format_url);
+
+    const propuesta = await propuestaRepository.buscarPropuestaPorId(id_proposal);
+    if (!propuesta) {
+        throw { status: 404, mensaje: 'Propuesta no encontrada' };
+    }
+
+    if (propuesta.state_proposal !== 'Rechazada') {
+        throw { status: 400, mensaje: 'Solo se pueden reenviar propuestas rechazadas' };
+    }
+
+    const lider = await propuestaRepository.buscarEstudiantePorId(id_user);
+    if (!lider || lider.id_student !== propuesta.id_leader) {
+        throw { status: 403, mensaje: 'Solo el líder puede reenviar la propuesta' };
+    }
+
+    await propuestaRepository.reenviarPropuesta(id_proposal, data);
+
+    return { mensaje: 'Propuesta reenviada exitosamente' };
 };

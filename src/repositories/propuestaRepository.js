@@ -58,3 +58,31 @@ export const buscarCicloPorId = async (id_cycle) => {
     );
     return rows[0];
 };
+
+// Buscar propuesta por ID
+export const buscarPropuestaPorId = async (id_proposal) => {
+    const [rows] = await db.query(
+        'SELECT * FROM proposals WHERE id_proposal = ?',
+        [id_proposal]
+    );
+    return rows[0];
+};
+
+// Reenviar propuesta (cambiar estado a Pendiente de validación)
+export const reenviarPropuesta = async (id_proposal, data) => {
+    await db.query(
+        `UPDATE proposals 
+         SET title_proposal = ?, descr_proposal = ?, problem_proposal = ?, justification_proposal = ?, objectives_proposal = ?, solution_proposal = ?, pdf_format_url = ?, state_proposal = 'Pendiente de validación'
+         WHERE id_proposal = ?`,
+        [
+            data.title_proposal,
+            data.descr_proposal,
+            data.problem_proposal,
+            data.justification_proposal,
+            data.objectives_proposal,
+            data.solution_proposal,
+            data.pdf_format_url,
+            id_proposal
+        ]
+    );
+};
