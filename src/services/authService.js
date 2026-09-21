@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import encontrarPorEmail  from '../repositories/authRepository.js';
+import {encontrarPorEmail}  from '../repositories/authRepository.js';
 import {encontrarAsignacionesPorId} from '../repositories/asignacionesRepository.js';
 dotenv.config();
 
