@@ -21,4 +21,4 @@ dist/
 build/
 
 # Archivo de firebase
-config/service-account.json
+src/config/service-account.json

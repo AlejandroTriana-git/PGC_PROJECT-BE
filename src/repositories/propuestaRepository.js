@@ -99,3 +99,101 @@ export async function esMiembroDePropuesta(id_proposal, id_user) {
   );
   return rows.length > 0;
 }
+//Buscar la propuesta del estudiante
+export const buscarPropuestaPorEstudiante = async (id_student) => {
+    const [rows] = await db.query(
+        `SELECT p.*, u.full_name AS leader_name
+         FROM proposals p
+         INNER JOIN proposal_students ps ON p.id_proposal = ps.id_proposal
+         INNER JOIN students s ON p.id_leader = s.id_student
+         INNER JOIN users u ON s.id_user = u.id_user
+         WHERE ps.id_student = ?
+         AND p.state_proposal IN ('Pendiente de validación', 'Aprobada', 'Rechazada', 'Anulada')
+         ORDER BY p.created_at DESC
+         LIMIT 1`,
+        [id_student]
+    );
+    return rows[0];
+};
+
+
+
+//esta funcion reliza la consulta por las llaves primarias (id)
+async function buscarPorId(id_proposal) {
+  const [filas] = await db.query(
+    "SELECT * FROM proposals WHERE id_proposal = ?",
+    [id_proposal]
+  );
+  return filas[0];
+}
+
+//esta funcion enlista las propuestas segun el estado y el ciclo
+//con JOINs para devolver título, líder, integrantes y ciclo que necesita el FE
+async function listarPorCicloYEstado(id_cycle, state_proposal) {
+  const [filas] = await db.query(
+    `SELECT
+       p.id_proposal,
+       p.id_cycle,
+       p.id_leader,
+       p.title_proposal,
+       p.descr_proposal,
+       p.problem_proposal,
+       p.justification_proposal,
+       p.objectives_proposal,
+       p.solution_proposal,
+       p.pdf_storage_path,
+       p.state_proposal,
+       p.resubmit_count,
+       p.rejection_comment,
+       p.created_at,
+       u.full_name  AS leader_name,
+       c.name_cycle AS ciclo,
+       (
+         SELECT COUNT(*)
+         FROM proposal_students ps2
+         WHERE ps2.id_proposal = p.id_proposal
+       ) AS num_integrantes
+     FROM proposals p
+     INNER JOIN students s  ON s.id_student = p.id_leader
+     INNER JOIN users   u  ON u.id_user    = s.id_user
+     INNER JOIN cycles  c  ON c.id_cycle   = p.id_cycle
+     WHERE p.id_cycle = ? AND p.state_proposal = ?`,
+    [id_cycle, state_proposal]
+  );
+  return filas;
+}
+
+//estas dos funcion determinan si el estado de la propuesta va a ser rechazado o aprobado
+async function aprobar(id_proposal, reviewed_by) {
+  await db.query(
+    `UPDATE proposals
+     SET state_proposal = 'Aprobada', reviewed_by = ?, reviewed_at = NOW()
+     WHERE id_proposal = ?`,
+    [reviewed_by, id_proposal]
+  );
+}
+
+async function rechazar(id_proposal, { rejection_comment, nuevoEstado, nuevoResubmitCount, reviewed_by }) {
+  await db.query(
+    `UPDATE proposals
+     SET state_proposal = ?, rejection_comment = ?, resubmit_count = ?,
+         reviewed_by = ?, reviewed_at = NOW()
+     WHERE id_proposal = ?`,
+    [nuevoEstado, rejection_comment, nuevoResubmitCount, reviewed_by, id_proposal]
+  );
+}
+
+// Buscar integrantes de una propuesta y devolver sus id_user (para el FE)
+export async function buscarIntegrantesDePropuesta(id_proposal) {
+  const [rows] = await db.query(
+    `SELECT s.id_student, u.id_user, u.full_name
+     FROM proposal_students ps
+     INNER JOIN students s ON s.id_student = ps.id_student
+     INNER JOIN users   u ON u.id_user    = s.id_user
+     WHERE ps.id_proposal = ?`,
+    [id_proposal]
+  );
+  return rows;
+}
+
+export { buscarPorId, listarPorCicloYEstado, aprobar, rechazar };
