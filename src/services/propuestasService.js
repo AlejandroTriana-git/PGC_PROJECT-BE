@@ -46,7 +46,7 @@ async function aprobarPropuesta(id_proposal, usuario) {
   }
 
   await proposalsRepository.aprobar(id_proposal, usuario.id);
-  return proposalsRepository.buscarPorId(id_proposal);
+  return {mensaje: 'Su Propuesta fue aprobada, ¡a desarrollar!'};
 }
 
 //esta funcion es igual a la de aprobar pero además calcula el nuevo resubmit_count y decide si pasa a Rechazada o a Anulada
@@ -76,7 +76,7 @@ async function rechazarPropuesta(id_proposal, comentario, usuario) {
     reviewed_by: usuario.id,
   });
 
-  return proposalsRepository.buscarPorId(id_proposal);
+  return {nuevoResubmitCount, mensaje: 'Su Propuesta fue rechazado'};
 }
 
 export { listarPendientesPorCiclo, aprobarPropuesta, rechazarPropuesta };
