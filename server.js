@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import db from './src/config/db.js';
 import authRoutes from './src/routes/authRoutes.js';
 import propuestaRoutes from './src/routes/propuestaRoutes.js';
+import estudianteRoutes from './src/routes/estudianteRoutes.js';
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ app.use(express.json());
 // Usar rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/propuestas', propuestaRoutes);
-
+app.use('/api/estudiantes', estudianteRoutes);
 // Ruta de prueba
 app.get('/', (req, res) => {
     res.send('API funcionando correctamente');
