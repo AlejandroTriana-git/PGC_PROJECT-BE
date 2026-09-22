@@ -1,4 +1,5 @@
 import * as asignacionesRepository from "../repositories/asignacionesRepository.js";
+import * as usersRepository from "../repositories/usersRepository.js";
 
 
 //esta es la funcion traductora del sistema a la bd
@@ -85,4 +86,10 @@ async function listarJuradosDeCiclo(id_cycle) {
   return asignacionesRepository.listarJuradosPorCiclo(id_cycle);
 }
 
-export { crearCiclo, editarCiclo, asignarJurados, quitarJurado, listarJuradosDeCiclo };
+// esta funcion lista los profesores disponibles para los selects de encargado/jurado
+async function listarProfesoresDisponibles(id_cycle, { excluirEncargado, excluirJurado } = {}) {
+  return usersRepository.listarProfesores({ idCycle: id_cycle, excluirEncargado, excluirJurado });
+}
+
+
+export { crearCiclo, editarCiclo, asignarJurados, quitarJurado, listarJuradosDeCiclo, listarProfesoresDisponibles };
