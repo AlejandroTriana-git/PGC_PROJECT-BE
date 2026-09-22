@@ -86,3 +86,20 @@ export const reenviarPropuesta = async (connection, id_proposal, data) => {
         ]
     );
 };
+
+//Buscar la propuesta del estudiante
+export const buscarPropuestaPorEstudiante = async (id_student) => {
+    const [rows] = await db.query(
+        `SELECT p.*, u.full_name AS leader_name
+         FROM proposals p
+         INNER JOIN proposal_students ps ON p.id_proposal = ps.id_proposal
+         INNER JOIN students s ON p.id_leader = s.id_student
+         INNER JOIN users u ON s.id_user = u.id_user
+         WHERE ps.id_student = ?
+         AND p.state_proposal IN ('Pendiente de validación', 'Aprobada', 'Rechazada', 'Anulada')
+         ORDER BY p.created_at DESC
+         LIMIT 1`,
+        [id_student]
+    );
+    return rows[0];
+};
