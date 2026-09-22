@@ -42,3 +42,35 @@ export const obtenerCicloPropuesta = async (idProposal) => {
     );
     return rows.length > 0 ? rows[0].id_cycle : null;
 }
+// Función para asignar un jurado a un ciclo
+export const asignarJurado = async (idCycle, idJuror) => {
+    await db.query(
+        'INSERT INTO cycle_juror (id_cycle, id_juror) VALUES (?, ?)',
+        [idCycle, idJuror]
+    );
+}
+// Función para quitar un jurado de un ciclo
+export const quitarJurado = async (idCycle, idJuror) => {
+    await db.query(
+        'DELETE FROM cycle_juror WHERE id_cycle = ? AND id_juror = ?',
+        [idCycle, idJuror]
+    );
+}
+
+// Función para listar los jurados asignados a un ciclo
+export const listarJuradosPorCiclo = async (idCycle) => {
+    const [rows] = await db.query(
+        'SELECT id_juror FROM cycle_juror WHERE id_cycle = ?',
+        [idCycle]
+    );
+    return rows.map(row => row.id_juror);
+}
+
+// Función para verificar si un jurado ya está asignado a ese ciclo, evita duplicados
+export const existeAsignacionJurado = async (idCycle, idJuror) => {
+    const [rows] = await db.query(
+        'SELECT 1 FROM cycle_juror WHERE id_cycle = ? AND id_juror = ?',
+        [idCycle, idJuror]
+    );
+    return rows.length > 0;
+};
