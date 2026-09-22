@@ -8,5 +8,8 @@ const router = Router();
 router.post("/", verificarToken, autorizarRoles("Coordinador"), cyclesController.crear);
 router.put("/:id", verificarToken, autorizarRoles("Coordinador"), cyclesController.editar);
 router.get("/", verificarToken, cyclesController.listar);
+router.post("/:id/jurados", verificarToken, autorizarRoles("Coordinador"), cyclesController.asignarJurados);
+router.delete("/:id/jurados/:id_jurado", verificarToken, autorizarRoles("Coordinador"), cyclesController.quitarJurado);
+router.get("/:id/jurados", verificarToken, cyclesController.listarJurados);
 
 export default router;
