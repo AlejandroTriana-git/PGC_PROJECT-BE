@@ -1,3 +1,5 @@
+
+import bucket from '../config/firebaseConfig.js';
 import * as propuestaRepository from '../repositories/propuestaRepository.js';
 
 // Validar campos obligatorios
@@ -11,16 +13,19 @@ const validarCampos = (data) => {
 };
 
 // Validar PDF
-const validarPDF = (pdf) => {
-    if (!pdf.endsWith('.pdf')) {
-        throw { status: 400, mensaje: 'El archivo debe ser PDF' };
-    }
+const validarPDF = (file) => {
+  if (!file) {
+    throw { status: 400, mensaje: 'El archivo PDF es obligatorio' };
+  }
+  if (file.mimetype !== 'application/pdf') {
+    throw { status: 400, mensaje: 'El archivo debe ser PDF' };
+  }
 };
 
 // Crear propuesta
-export const crearPropuesta = async (data, id_user) => {
+export const crearPropuesta = async (data, id_user, file) => {
     validarCampos(data);
-    validarPDF(data.pdf_format_url);
+    validarPDF(file);
 
     const lider = await propuestaRepository.buscarEstudiantePorId(id_user);
     if (!lider) {
@@ -36,7 +41,7 @@ export const crearPropuesta = async (data, id_user) => {
     if (propuestaActiva) {
         throw { status: 400, mensaje: 'El líder ya tiene una propuesta activa en este ciclo' };
     }
-
+    // Falta validar que sean estudiantes y que no esten en otra propuesta activa en el mismo ciclo
     if (data.integrantes.length > ciclo.max_members) {
         throw { status: 400, mensaje: `El máximo de integrantes es ${ciclo.max_members}` };
     }
@@ -53,6 +58,12 @@ export const crearPropuesta = async (data, id_user) => {
         pdf_format_url: data.pdf_format_url
     });
 
+
+    //  Subir el PDF a Firebase Storage
+    const nombreArchivo = `propuestas/${id_proposal}/formato-pgc-${Date.now()}.pdf`;
+    const fileRef = bucket.file(nombreArchivo);
+
+    
     await propuestaRepository.insertarIntegrante(id_proposal, lider.id_student);
 
     for (const id_integrante of data.integrantes) {
@@ -70,7 +81,7 @@ export const crearPropuesta = async (data, id_user) => {
 };
 
 // Reenviar propuesta
-export const reenviarPropuesta = async (id_proposal, data, id_user) => {
+export const reenviarPropuesta = async (id_proposal, data, id_user, file) => {
     validarCampos(data);
     validarPDF(data.pdf_format_url);
 
