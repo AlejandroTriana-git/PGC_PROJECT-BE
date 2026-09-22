@@ -1,10 +1,10 @@
 import db from '../config/db.js';
 
-// Crear propuesta
-export const crearPropuesta = async (data) => {
-    const [result] = await db.query(
+// Crear propuesta (con transacción)
+export const crearPropuesta = async (connection, data) => {
+    const [result] = await connection.query(
         `INSERT INTO proposals 
-        (id_leader, id_cycle, title_proposal, descr_proposal, problem_proposal, justification_proposal, objectives_proposal, solution_proposal, pdf_format_url, state_proposal, resubmit_count)
+        (id_leader, id_cycle, title_proposal, descr_proposal, problem_proposal, justification_proposal, objectives_proposal, solution_proposal, pdf_storage_path, state_proposal, resubmit_count)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pendiente de validación', 0)`,
         [
             data.id_leader,
@@ -15,15 +15,15 @@ export const crearPropuesta = async (data) => {
             data.justification_proposal,
             data.objectives_proposal,
             data.solution_proposal,
-            data.pdf_format_url
+            data.pdf_storage_path
         ]
     );
     return result.insertId;
 };
 
-// Insertar en proposal_students
-export const insertarIntegrante = async (id_proposal, id_student) => {
-    await db.query(
+// Insertar en proposal_students (con transacción)
+export const insertarIntegrante = async (connection, id_proposal, id_student) => {
+    await connection.query(
         'INSERT INTO proposal_students (id_proposal, id_student) VALUES (?, ?)',
         [id_proposal, id_student]
     );
@@ -68,11 +68,11 @@ export const buscarPropuestaPorId = async (id_proposal) => {
     return rows[0];
 };
 
-// Reenviar propuesta (cambiar estado a Pendiente de validación)
-export const reenviarPropuesta = async (id_proposal, data) => {
-    await db.query(
+// Reenviar propuesta (con transacción)
+export const reenviarPropuesta = async (connection, id_proposal, data) => {
+    await connection.query(
         `UPDATE proposals 
-         SET title_proposal = ?, descr_proposal = ?, problem_proposal = ?, justification_proposal = ?, objectives_proposal = ?, solution_proposal = ?, pdf_format_url = ?, state_proposal = 'Pendiente de validación'
+         SET title_proposal = ?, descr_proposal = ?, problem_proposal = ?, justification_proposal = ?, objectives_proposal = ?, solution_proposal = ?, pdf_storage_path = ?, state_proposal = 'Pendiente de validación'
          WHERE id_proposal = ?`,
         [
             data.title_proposal,
@@ -81,8 +81,21 @@ export const reenviarPropuesta = async (id_proposal, data) => {
             data.justification_proposal,
             data.objectives_proposal,
             data.solution_proposal,
-            data.pdf_format_url,
+            data.pdf_storage_path,
             id_proposal
         ]
     );
 };
+
+// Verificar si un usuario es miembro de una propuesta
+export async function esMiembroDePropuesta(id_proposal, id_user) {
+  const [rows] = await db.query(
+    `SELECT 1
+     FROM proposal_students ps
+     JOIN students s ON s.id_student = ps.id_student
+     WHERE ps.id_proposal = ? AND s.id_user = ?
+     LIMIT 1`,
+    [id_proposal, id_user]
+  );
+  return rows.length > 0;
+}

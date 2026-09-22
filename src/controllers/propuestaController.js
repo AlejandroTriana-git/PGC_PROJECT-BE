@@ -30,4 +30,18 @@ const reenviarPropuesta = async (req, res) => {
     }
 };
 
+
+// Controlador para obtener la URL de visualización del PDF de una propuesta
+export const verPdfPropuesta = async (req, res) => {
+  try {
+    const { idProposal } = req.params;
+    const resultado = await propuestaService.obtenerUrlPdf(idProposal);
+    res.status(200).json(resultado);
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json({ mensaje: error.mensaje || 'Error interno' });
+  }
+};
+
 export { crearPropuesta, reenviarPropuesta };
