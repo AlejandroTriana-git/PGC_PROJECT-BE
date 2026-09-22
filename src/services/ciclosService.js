@@ -1,3 +1,5 @@
+import * as asignacionesRepository from "../repositories/asignacionesRepository.js";
+
 
 //esta es la funcion traductora del sistema a la bd
 
@@ -29,3 +31,58 @@ async function editarCiclo(id_cycle, body) {
   await cyclesRepository.actualizar(id_cycle, mapearDatosCiclo(body));
   return cyclesRepository.buscarPorId(id_cycle);
 }
+// esta funcion asigna uno o varios jurados a un ciclo existente
+async function asignarJurados(id_cycle, id_jurados) {
+  const cicloExistente = await cyclesRepository.buscarPorId(id_cycle);
+  if (!cicloExistente) {
+    const error = new Error("Ciclo no encontrado");
+    error.status = 404;
+    throw error;
+  }
+
+  // permite que llegue un solo id o un arreglo de ids
+  const listaJurados = Array.isArray(id_jurados) ? id_jurados : [id_jurados];
+
+  if (listaJurados.length === 0) {
+    const error = new Error("Debe enviar al menos un jurado");
+    error.status = 400;
+    throw error;
+  }
+
+  for (const id_juror of listaJurados) {
+    // evitamos insertar duplicados si ya estaba asignado
+    const yaAsignado = await asignacionesRepository.existeAsignacionJurado(id_cycle, id_juror);
+    if (!yaAsignado) {
+      await asignacionesRepository.asignarJurado(id_cycle, id_juror);
+    }
+  }
+
+  return cyclesRepository.buscarPorId(id_cycle);
+}
+
+// esta funcion quita un jurado asignado a un ciclo
+async function quitarJurado(id_cycle, id_juror) {
+  const cicloExistente = await cyclesRepository.buscarPorId(id_cycle);
+  if (!cicloExistente) {
+    const error = new Error("Ciclo no encontrado");
+    error.status = 404;
+    throw error;
+  }
+
+  await asignacionesRepository.quitarJurado(id_cycle, id_juror);
+  return cyclesRepository.buscarPorId(id_cycle);
+}
+
+// esta funcion lista los jurados asignados a un ciclo
+async function listarJuradosDeCiclo(id_cycle) {
+  const cicloExistente = await cyclesRepository.buscarPorId(id_cycle);
+  if (!cicloExistente) {
+    const error = new Error("Ciclo no encontrado");
+    error.status = 404;
+    throw error;
+  }
+
+  return asignacionesRepository.listarJuradosPorCiclo(id_cycle);
+}
+
+export { crearCiclo, editarCiclo, asignarJurados, quitarJurado, listarJuradosDeCiclo };

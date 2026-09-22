@@ -40,3 +40,35 @@ async function listar(req, res) {
     return res.status(500).json({ mensaje: "Error interno" });
   }
 }
+
+//aca se asigna jurados al ciclo seleccionado
+async function asignarJurados(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { id_jurados } = req.body;
+    const ciclo = await ciclosService.asignarJurados(id, id_jurados);
+    res.json(ciclo);
+  } catch (error) {
+    next(error);
+  }
+}
+//aca se quita jurados del ciclo seleccionado
+async function quitarJurado(req, res, next) {
+  try {
+    const { id, id_jurado } = req.params;
+    const ciclo = await ciclosService.quitarJurado(id, id_jurado);
+    res.json(ciclo);
+  } catch (error) {
+    next(error);
+  }
+}
+//aca se enlistan todos los jurados que hay
+async function listarJurados(req, res, next) {
+  try {
+    const { id } = req.params;
+    const jurados = await ciclosService.listarJuradosDeCiclo(id);
+    res.json(jurados);
+  } catch (error) {
+    next(error);
+  }
+}
