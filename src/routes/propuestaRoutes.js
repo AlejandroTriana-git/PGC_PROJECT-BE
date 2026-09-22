@@ -1,13 +1,16 @@
 import express from 'express';
-import { crearPropuesta, reenviarPropuesta } from '../controllers/propuestaController.js';
+import { crearPropuesta, reenviarPropuesta, verMiPropuesta } from '../controllers/propuestaController.js';
 import verificarToken from '../middlewares/autenticar.middleware.js';
 
 const router = express.Router();
 
-// POST /api/propuestas (solo estudiantes)
+// POST /api/propuestas (radicar propuesta)
 router.post('/', verificarToken, crearPropuesta);
 
-// PATCH /api/propuestas/:id/reenviar (solo líder, si rechazada)
+// GET /api/propuestas/mia (ver mi propuesta)
+router.get('/mia', verificarToken, verMiPropuesta);
+
+// PATCH /api/propuestas/:id/reenviar (reenviar propuesta)
 router.patch('/:id/reenviar', verificarToken, reenviarPropuesta);
 
 export default router;
