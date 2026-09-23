@@ -1,0 +1,10 @@
+//Aca va la lógica del negocio(validaciones):
+
+//Example:
+
+//const login = async (data) => {
+    // buscar usuario
+    // comprobar contraseña
+    // generar token
+    // devolver información
+//};
