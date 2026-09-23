@@ -2,15 +2,26 @@ import db from '../config/db.js';
 import bucket from '../config/firebaseConfig.js';
 import * as propuestaRepository from '../repositories/propuestaRepository.js';
 import * as cyclesRepository from "../repositories/ciclosRepository.js";
+import {
+    insertarCategoriaPropuesta,
+    eliminarCategoriasPropuesta,
+    buscarCategoriasDePropuesta,
+    eliminarIntegrantesPropuesta,
+} from '../repositories/propuestaRepository.js';
 
 // Validar campos obligatorios
 // NOTA: id_cycle ya no se recibe del FE — se obtiene internamente del líder en la BD
+// NOTA: 'descr_proposal' es la descripción libre; 'categorias' es el array de id_category
 const validarCampos = (data) => {
     const campos = ['title_proposal', 'descr_proposal', 'problem_proposal', 'justification_proposal', 'objectives_proposal', 'solution_proposal', 'integrantes'];
     for (const campo of campos) {
         if (!data[campo]) {
             throw { status: 400, mensaje: `El campo ${campo} es obligatorio` };
         }
+    }
+    // Validar que categorias sea un array con al menos un elemento
+    if (!data.categorias || !Array.isArray(data.categorias) || data.categorias.length === 0) {
+        throw { status: 400, mensaje: 'Debes seleccionar al menos una categoría' };
     }
 };
 
@@ -59,9 +70,14 @@ export const crearPropuesta = async (data, id_user, file) => {
     if (typeof data.integrantes === 'string') {
         data.integrantes = JSON.parse(data.integrantes);
     }
+    // Parsear categorias desde JSON string (viene como FormData)
+    if (typeof data.categorias === 'string') {
+        data.categorias = JSON.parse(data.categorias);
+    }
 
-    // 👇 CAMBIO: normalizar integrantes a Number ANTES de cualquier uso
+    // Normalizar a números
     data.integrantes = data.integrantes.map(Number);
+    data.categorias  = data.categorias.map(Number);
 
     validarCampos(data);
     validarPDF(file);
@@ -144,6 +160,11 @@ export const crearPropuesta = async (data, id_user, file) => {
             await propuestaRepository.insertarIntegrante(connection, id_proposal, integrante.id_student);
         }
 
+        // Insertar categorías en proposal_categories
+        for (const id_category of data.categorias) {
+            await insertarCategoriaPropuesta(connection, id_proposal, id_category);
+        }
+
         const estado = 'Pendiente de validación';
         await connection.commit();
 
@@ -159,6 +180,18 @@ export const crearPropuesta = async (data, id_user, file) => {
 };
 // Reenviar propuesta (con transacción)
 export const reenviarPropuesta = async (id_proposal, data, id_user, file) => {
+    // Parsear integrantes si viene como JSON string
+    if (typeof data.integrantes === 'string') {
+        data.integrantes = JSON.parse(data.integrantes);
+    }
+    data.integrantes = (data.integrantes || []).map(Number);
+
+    // Parsear categorias si viene como JSON string
+    if (typeof data.categorias === 'string') {
+        data.categorias = JSON.parse(data.categorias);
+    }
+    data.categorias = (data.categorias || []).map(Number);
+
     validarCampos(data);
     validarPDF(file);
 
@@ -176,6 +209,10 @@ export const reenviarPropuesta = async (id_proposal, data, id_user, file) => {
         throw { status: 403, mensaje: 'Solo el líder puede reenviar la propuesta' };
     }
 
+    const ciclo = await propuestaRepository.buscarCicloPorId(propuesta.id_cycle);
+    if (ciclo && data.integrantes.length > ciclo.max_members) {
+        throw { status: 400, mensaje: `El máximo de integrantes es ${ciclo.max_members}` };
+    }
 
     // PLUS: Guardar el path viejo para borrarlo al final
     const oldPath = propuesta.pdf_storage_path;
@@ -188,7 +225,6 @@ export const reenviarPropuesta = async (id_proposal, data, id_user, file) => {
 
     // Iniciar transacción
     const connection = await db.getConnection();
-    
 
     try {
         await connection.beginTransaction();
@@ -197,7 +233,26 @@ export const reenviarPropuesta = async (id_proposal, data, id_user, file) => {
             pdf_storage_path: newPath,
         });
 
-      
+        // Actualizar integrantes en proposal_students: líder siempre + integrantes seleccionados
+        await eliminarIntegrantesPropuesta(connection, id_proposal);
+        await propuestaRepository.insertarIntegrante(connection, id_proposal, lider.id_student);
+        for (const id_integrante of data.integrantes) {
+            const integrante = await propuestaRepository.buscarEstudiantePorId(id_integrante);
+            if (!integrante) {
+                throw { status: 404, mensaje: `El integrante ${id_integrante} no existe` };
+            }
+            if (Number(integrante.id_cycle) !== Number(propuesta.id_cycle)) {
+                throw { status: 400, mensaje: `El integrante ${id_integrante} no pertenece al mismo ciclo` };
+            }
+            await propuestaRepository.insertarIntegrante(connection, id_proposal, integrante.id_student);
+        }
+
+        // Actualizar categorías: borrar las anteriores e insertar las nuevas
+        await eliminarCategoriasPropuesta(connection, id_proposal);
+        for (const id_category of data.categorias) {
+            await insertarCategoriaPropuesta(connection, id_proposal, id_category);
+        }
+
         await connection.commit();
          // PLUS: borrar el archivo VIEJO solo después del commit exitoso
         await borrarArchivoFirebase(oldPath);
@@ -261,6 +316,9 @@ export const verMiPropuesta = async (id_user) => {
     // Obtener integrantes de la propuesta (sus id_user para el FE)
     const integrantes = await propuestaRepository.buscarIntegrantesDePropuesta(propuesta.id_proposal);
 
+    // Obtener categorías de la propuesta
+    const categorias = await buscarCategoriasDePropuesta(propuesta.id_proposal);
+
     // Generar URL firmada del PDF si existe
     let pdf = null;
     if (propuesta.pdf_storage_path) {
@@ -292,6 +350,8 @@ export const verMiPropuesta = async (id_user) => {
         justification_proposal:   propuesta.justification_proposal,
         objectives_proposal:      propuesta.objectives_proposal,
         solution_proposal:        propuesta.solution_proposal,
+        // Categorías (array de {id_category, name_category})
+        categorias:               categorias,
         // Integrantes: lista de { id_user, full_name } para mostrar nombres en el FE
         integrantes:              integrantes.map(i => ({ id_user: i.id_user, full_name: i.full_name })),
         // PDF con URL firmada

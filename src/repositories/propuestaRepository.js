@@ -128,7 +128,7 @@ async function buscarPorId(id_proposal) {
 }
 
 //esta funcion enlista las propuestas segun el estado y el ciclo
-//con JOINs para devolver título, líder, integrantes y ciclo que necesita el FE
+//con JOINs para devolver título, líder, integrantes, categorías y ciclo que necesita el FE
 async function listarPorCicloYEstado(id_cycle, state_proposal) {
   const [filas] = await db.query(
     `SELECT
@@ -152,7 +152,20 @@ async function listarPorCicloYEstado(id_cycle, state_proposal) {
          SELECT COUNT(*)
          FROM proposal_students ps2
          WHERE ps2.id_proposal = p.id_proposal
-       ) AS num_integrantes
+       ) AS num_integrantes,
+       (
+         SELECT GROUP_CONCAT(cat.name_category SEPARATOR ', ')
+         FROM proposal_categories pc
+         INNER JOIN categories cat ON cat.id_category = pc.id_category
+         WHERE pc.id_proposal = p.id_proposal
+       ) AS categorias,
+       (
+         SELECT GROUP_CONCAT(u2.full_name SEPARATOR ', ')
+         FROM proposal_students ps3
+         INNER JOIN students s3 ON s3.id_student = ps3.id_student
+         INNER JOIN users u2 ON u2.id_user = s3.id_user
+         WHERE ps3.id_proposal = p.id_proposal AND s3.id_student != p.id_leader
+       ) AS nombres_integrantes
      FROM proposals p
      INNER JOIN students s  ON s.id_student = p.id_leader
      INNER JOIN users   u  ON u.id_user    = s.id_user
@@ -194,6 +207,43 @@ export async function buscarIntegrantesDePropuesta(id_proposal) {
     [id_proposal]
   );
   return rows;
+}
+
+// Eliminar todos los integrantes de una propuesta (para reenvío)
+export const eliminarIntegrantesPropuesta = async (connection, id_proposal) => {
+    await connection.query(
+        'DELETE FROM proposal_students WHERE id_proposal = ?',
+        [id_proposal]
+    );
+};
+
+// Insertar una categoría asociada a una propuesta (transacción)
+export const insertarCategoriaPropuesta = async (connection, id_proposal, id_category) => {
+    await connection.query(
+        'INSERT INTO proposal_categories (id_proposal, id_category) VALUES (?, ?)',
+        [id_proposal, id_category]
+    );
+};
+
+// Eliminar todas las categorías de una propuesta (para reenvío)
+export const eliminarCategoriasPropuesta = async (connection, id_proposal) => {
+    await connection.query(
+        'DELETE FROM proposal_categories WHERE id_proposal = ?',
+        [id_proposal]
+    );
+};
+
+// Obtener las categorías asociadas a una propuesta
+export async function buscarCategoriasDePropuesta(id_proposal) {
+    const [rows] = await db.query(
+        `SELECT c.id_category, c.name_category
+         FROM proposal_categories pc
+         INNER JOIN categories c ON c.id_category = pc.id_category
+         WHERE pc.id_proposal = ?
+         ORDER BY c.id_category ASC`,
+        [id_proposal]
+    );
+    return rows;
 }
 
 export { buscarPorId, listarPorCicloYEstado, aprobar, rechazar };
