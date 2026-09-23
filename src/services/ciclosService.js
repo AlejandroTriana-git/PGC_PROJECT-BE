@@ -1,6 +1,6 @@
 import * as asignacionesRepository from "../repositories/asignacionesRepository.js";
-import * as usersRepository from "../repositories/usersRepository.js";
-
+import * as usersRepository from "../repositories/usuariosRepository.js";
+import * as cyclesRepository from "../repositories/ciclosRepository.js"
 
 //esta es la funcion traductora del sistema a la bd
 
