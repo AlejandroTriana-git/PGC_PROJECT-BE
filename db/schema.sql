@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `pgc_db`.`proposals` (
   `justification_proposal` TEXT NOT NULL,
   `objectives_proposal` TEXT NOT NULL,
   `solution_proposal` TEXT NOT NULL,
-  `pdf_format_url` VARCHAR(255) NOT NULL,
+  `pdf_storage_path` VARCHAR(500) NOT NULL,
   `state_proposal` ENUM('Pendiente de validación', 'Aprobada', 'Rechazada', 'Anulada') NOT NULL DEFAULT 'Pendiente de validación',
   `rejection_comment` VARCHAR(500) NULL,
   `resubmit_count` TINYINT UNSIGNED NOT NULL DEFAULT 0,
