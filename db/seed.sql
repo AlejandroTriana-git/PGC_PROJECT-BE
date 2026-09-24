@@ -103,3 +103,8 @@ INSERT INTO `pgc_db`.`categories` (`name_category`) VALUES
   ('IoT'),
   ('Hardware'),
   ('Gestión');
+
+INSERT INTO `pgc_db`.`cycle_dates` (id_cycle, updated_by, stage, start_date, end_date) VALUES
+  (1, 4, "Registro PGC", '2026-09-24 00:00:00', '2026-10-24 00:00:00'),
+  (2, 4, "Registro PGC", '2026-09-24 00:00:00', '2026-10-24 00:00:00'),
+  (3, 4, "Registro PGC", '2026-09-24 00:00:00', '2026-10-24 00:00:00');
