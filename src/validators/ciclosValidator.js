@@ -1,4 +1,4 @@
-
+import {obtenerFechasEtapas} from "../repositories/ciclosRepository.js" ;
 // esta funcion es la encargada de validar que los datos lleguen correctamente para crear o editar un ciclo
 
 function validarCiclo(body) {
@@ -30,5 +30,32 @@ function validarCiclo(body) {
 
   return errores;
 }
+//Funcion para encontrar las fechas de inicio y fin de una etapa específica de un ciclo
+async function encontrarFechasEtapas(id_ciclo, stage) {
+  const fechas = await obtenerFechasEtapas(id_ciclo, stage);
+  if (!fechas) {
+    return null; // Si no se encuentran las fechas del ciclo, devolvemos null
+  }
+  return { fechaInicio: fechas.start_date, fechaFin: fechas.end_date };
+}
 
-export { validarCiclo };
+//Funcion para verificar si la fecha actual está dentro del rango de fechas de una etapa específica de un ciclo
+async function estaDentroDeLaEtapa(id_ciclo, stage) {
+  const fechas = await encontrarFechasEtapas(id_ciclo, stage);
+
+  if (fechas === null) {
+    return false; // Si no se encuentran las fechas del ciclo, devolvemos false
+  }
+
+  const ahora = new Date();
+  const inicio = new Date(fechas.fechaInicio);
+  const fin = new Date(fechas.fechaFin);
+
+
+
+  return ahora >= inicio && ahora <= fin;
+}
+
+
+
+export { validarCiclo, estaDentroDeLaEtapa, encontrarFechasEtapas };

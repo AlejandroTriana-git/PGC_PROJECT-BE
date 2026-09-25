@@ -29,4 +29,17 @@ async function buscarPorId(id_cycle) {
   return filas[0];
 }
 
-export { crear, actualizar, listarTodos, buscarPorId };
+// esta funcion obtiene las fechas de inicio y fin de una etapa específica de un ciclo
+async function obtenerFechasEtapas(id_cycle, stage) {
+  const [filas] = await db.query(
+    "SELECT start_date, end_date FROM cycle_dates WHERE id_cycle = ? AND stage = ?",
+    [id_cycle, stage]
+  );
+  return filas[0] ?? null;
+}
+
+
+
+
+
+export { crear, actualizar, listarTodos, buscarPorId, obtenerFechasEtapas };
