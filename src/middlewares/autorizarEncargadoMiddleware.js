@@ -43,7 +43,7 @@ export function autorizarEncargadoDeCiclo() {
       return res.status(401).json({ mensaje: "No autenticado" });
     }
 
-    const idCycle = req.params.id_cycle || req.query.cycle;
+    const idCycle = req.params.id; // Se obtiene el id del ciclo desde los parámetros de la ruta o la query
 
     try {
       const esEncargado = await esEncargadoDeCiclo(idCycle, req.usuario.id);

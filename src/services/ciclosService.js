@@ -2,6 +2,8 @@ import * as asignacionesRepository from "../repositories/asignacionesRepository.
 import * as usersRepository from "../repositories/usuariosRepository.js";
 import * as cyclesRepository from "../repositories/ciclosRepository.js"
 
+//Aca estan los stages permitidos
+const stagesPermitidos = ["Radicación", "Registro PGC", "Sustentación", "Calificación"];
 //esta es la funcion traductora del sistema a la bd
 
 function mapearDatosCiclo(body) {
@@ -91,5 +93,53 @@ async function listarProfesoresDisponibles(id_cycle, { excluirEncargado, excluir
   return usersRepository.listarProfesores({ idCycle: id_cycle, excluirEncargado, excluirJurado });
 }
 
+//Funcion para obtener las fechas de un ciclo, si no existe el ciclo lanza un error 404, si existe pero no hay fechas devuelve []
+async function obtenerFechas(id_cycle) {
+  const cicloExistente = await cyclesRepository.buscarPorId(id_cycle);
+  if (!cicloExistente) {
+    const error = new Error("Ciclo no encontrado");
+    error.status = 404;
+    throw error;
+  }
 
-export { crearCiclo, editarCiclo, asignarJurados, quitarJurado, listarJuradosDeCiclo, listarProfesoresDisponibles };
+  return cyclesRepository.obtenerFechas(id_cycle);
+  // Si el ciclo existe pero no hay fechas, esto devuelve [] y el controller responde 200 con []
+}
+
+
+async function actualizarFechas(id_cycle, stage, fechas, id_usuario) {
+  const cicloExistente = await cyclesRepository.buscarPorId(id_cycle);
+  if (!cicloExistente) {
+    const error = new Error("Ciclo no encontrado");
+    error.status = 404;
+    throw error;
+  }
+  //Validar que fechas no venga vacio
+  if (!fechas || !fechas.start_date || !fechas.end_date) {
+    const error = new Error("Debe enviar las fechas de inicio y fin");
+    error.status = 400;
+    throw error;
+  }
+
+  // Validar que stage sea uno de los valores permitidos
+  if (!stagesPermitidos.includes(stage)) {
+    const error = new Error("Stage no válido");
+    error.status = 400;
+    throw error;
+  }
+  //Validar que la fecha de inicio sea menor a la fecha de fin
+  if (new Date(fechas.start_date) >= new Date(fechas.end_date)) {
+    const error = new Error("La fecha de inicio debe ser menor a la fecha de fin");
+    error.status = 400;
+    throw error;
+  }
+  // Actualizar las fechas del ciclo
+  const actualizado = await cyclesRepository.actualizarFechas(id_cycle, stage, fechas.start_date, fechas.end_date, id_usuario);
+  if (!actualizado) {
+    const error = new Error("No hay fechas configuradas para esa etapa");
+    error.status = 404;
+    throw error;
+  }
+}
+
+export { crearCiclo, editarCiclo, asignarJurados, quitarJurado, listarJuradosDeCiclo, listarProfesoresDisponibles, obtenerFechas, actualizarFechas };

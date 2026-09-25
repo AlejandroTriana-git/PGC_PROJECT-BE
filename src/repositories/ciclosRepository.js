@@ -39,7 +39,27 @@ async function obtenerFechasEtapas(id_cycle, stage) {
 }
 
 
+// esta funcion obtiene todas las fechas de un ciclo
+async function obtenerFechas(id_cycle) {
+  const [filas] = await db.query(
+    `SELECT 
+      stage,
+      DATE_FORMAT(start_date, '%Y-%m-%d %H:%i:%s') AS start_date,
+      DATE_FORMAT(end_date,   '%Y-%m-%d %H:%i:%s') AS end_date
+    FROM cycle_dates 
+    WHERE id_cycle = ?`,
+    [id_cycle]
+  );
+  return filas;
+}
 
+async function actualizarFechas(id_cycle, stage, start_date, end_date, id_usuario) {
+  const [resultado] = await db.query(
+    "UPDATE cycle_dates SET start_date = ?, end_date = ? , updated_by = ? WHERE id_cycle = ? AND stage = ?",
+    [start_date, end_date, id_usuario, id_cycle, stage]
+  );
+  return resultado.affectedRows > 0;
 
+}
 
-export { crear, actualizar, listarTodos, buscarPorId, obtenerFechasEtapas };
+export { crear, actualizar, listarTodos, buscarPorId, obtenerFechasEtapas, obtenerFechas, actualizarFechas };
