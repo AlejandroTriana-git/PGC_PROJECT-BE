@@ -90,3 +90,29 @@ export async function listarProfesores(req, res) {
     res.status(error.status || 500).json({ mensaje: error.message || 'Error interno' });
   }
 }
+
+//esta funcion obtiene las fechas de un ciclo, si no existe el ciclo lanza un error 404, si existe pero no hay fechas devuelve []
+export async function obtenerFechas(req, res) {
+  try{
+    const id_cycle = req.params.id;
+    const fechas = await cyclesService.obtenerFechas(id_cycle);
+    res.status(200).json(fechas);
+
+  }catch (error) {
+    res.status(error.status || 500).json({ mensaje: error.message || 'Error interno' });
+  }
+}
+
+
+export async function actualizarFechas(req, res) {
+  try {
+    const id_user = req.usuario.id; // Obtener el ID del usuario autenticado
+    const id_cycle = req.params.id;
+    const stage = req.params.stage;
+    const fechas = req.body;
+    await cyclesService.actualizarFechas(id_cycle, stage, fechas, id_user);
+    res.status(200).json({ mensaje: "Fechas actualizadas correctamente" });
+  }catch (error) {
+    res.status(error.status || 500).json({ mensaje: error.message || 'Error interno' });
+  }
+}

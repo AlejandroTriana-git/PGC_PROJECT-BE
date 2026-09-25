@@ -4,6 +4,7 @@ import verificarToken from '../middlewares/autenticarMiddleware.js';
 import autorizarRoles from '../middlewares/rolMiddleware.js';
 import { subirPdfPropuesta } from '../middlewares/uploadMiddleware.js';
 import { puedeVerPropuesta } from '../middlewares/puedeVerPropuestaMiddleware.js';
+import { autorizarEncargadoPropuesta } from '../middlewares/autorizarEncargadoMiddleware.js';
 
 const router = express.Router();
 
@@ -20,10 +21,10 @@ router.get('/mia', verificarToken, verMiPropuesta);
 router.get('/', verificarToken, listarPendientes);
 
 // PATCH /api/propuestas/:id/aprobar (encargado del ciclo)
-router.patch('/:id/aprobar', verificarToken, aprobar);
+router.patch('/:id/aprobar', verificarToken, autorizarEncargadoPropuesta(), aprobar);
 
 // PATCH /api/propuestas/:id/rechazar (encargado del ciclo)
-router.patch('/:id/rechazar', verificarToken, rechazar);
+router.patch('/:id/rechazar', verificarToken, autorizarEncargadoPropuesta(), rechazar);
 
 // GET /api/propuestas/:idProposal/pdf (miembros del equipo o encargado del ciclo)
 router.get('/:idProposal/pdf', verificarToken, puedeVerPropuesta(), verPdfPropuesta);
