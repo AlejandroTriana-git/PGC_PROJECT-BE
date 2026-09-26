@@ -1,4 +1,5 @@
 import express from 'express';
+import { listarPropuestasAprobadasSinPgc } from '../controllers/pgcController.js';
 import { crearPropuesta, reenviarPropuesta, verPdfPropuesta, verMiPropuesta, listarPendientes, aprobar, rechazar } from '../controllers/propuestaController.js';
 import verificarToken from '../middlewares/autenticarMiddleware.js';
 import autorizarRoles from '../middlewares/rolMiddleware.js';
@@ -29,4 +30,6 @@ router.patch('/:id/rechazar', verificarToken, autorizarEncargadoPropuesta(), rec
 // GET /api/propuestas/:idProposal/pdf (miembros del equipo o encargado del ciclo)
 router.get('/:idProposal/pdf', verificarToken, puedeVerPropuesta(), verPdfPropuesta);
 
+// GET /api/propuestas/aprobadas-sin-pgc
+router.get('/aprobadas-sin-pgc', verificarToken, listarPropuestasAprobadasSinPgc);
 export default router;
