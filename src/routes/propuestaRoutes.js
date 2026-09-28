@@ -15,8 +15,11 @@ router.post('/', verificarToken, autorizarRoles('Estudiante'), subirPdfPropuesta
 // PATCH /api/propuestas/:id/reenviar (solo Estudiante, si rechazada)
 router.patch('/:id/reenviar', verificarToken, autorizarRoles('Estudiante'), subirPdfPropuesta, reenviarPropuesta);
 
-// GET /api/propuestas/mia (ver mi propuesta — debe ir ANTES de /:idProposal/pdf)
+// GET /api/propuestas/mia (ver mi propuesta)
 router.get('/mia', verificarToken, verMiPropuesta);
+
+// GET /api/propuestas/aprobadas-sin-pgc (listar propuestas aprobadas sin PGC)
+router.get('/aprobadas-sin-pgc', verificarToken, listarPropuestasAprobadasSinPgc);
 
 // GET /api/propuestas?cycle=X&estado=Y (listar propuestas por ciclo y estado)
 router.get('/', verificarToken, listarPendientes);
@@ -30,6 +33,4 @@ router.patch('/:id/rechazar', verificarToken, autorizarEncargadoPropuesta(), rec
 // GET /api/propuestas/:idProposal/pdf (miembros del equipo o encargado del ciclo)
 router.get('/:idProposal/pdf', verificarToken, puedeVerPropuesta(), verPdfPropuesta);
 
-// GET /api/propuestas/aprobadas-sin-pgc
-router.get('/aprobadas-sin-pgc', verificarToken, listarPropuestasAprobadasSinPgc);
 export default router;

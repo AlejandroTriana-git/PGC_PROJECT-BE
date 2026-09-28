@@ -12,3 +12,4 @@
 
  const bucket = getStorage(app).bucket();
 
+export default bucket;
