@@ -13,7 +13,7 @@ export const listarPropuestasAprobadasSinPgc = async (id_usuario) => {
 };
 
 // ============================================
-// ISSUE 2: Registrar PGC
+// ISSUE 2: Registrar PGC (SIN transacción)
 // ============================================
 
 export const crearPgc = async (id_proposal, id_usuario) => {
@@ -54,25 +54,13 @@ export const crearPgc = async (id_proposal, id_usuario) => {
         };
     }
 
-    // 6. Crear el PGC (con transacción)
-    const connection = await db.getConnection();
-    await connection.beginTransaction();
+    // 6. Crear el PGC (SIN transacción)
+    const id_pgc = await pgcRepository.crearPgc(db, {
+        id_cycle: propuesta.id_cycle,
+        id_proposal: id_proposal
+    });
 
-    try {
-        const id_pgc = await pgcRepository.crearPgc(connection, {
-            id_cycle: propuesta.id_cycle,
-            id_proposal: id_proposal
-        });
-
-        await connection.commit();
-
-        return { id_pgc, mensaje: 'PGC registrado exitosamente' };
-    } catch (error) {
-        await connection.rollback();
-        throw error;
-    } finally {
-        connection.release();
-    }
+    return { id_pgc, mensaje: 'PGC registrado exitosamente' };
 };
 
 // ============================================
