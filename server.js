@@ -8,6 +8,7 @@ import estudianteRoutes from './src/routes/estudianteRoutes.js';
 import ciclosRoutes from './src/routes/ciclosRoutes.js';
 import profesoresRoutes from './src/routes/profesoresRoutes.js';
 import categoriasRoutes from './src/routes/categoriasRoutes.js';
+import pgcArchivoRoutes from "./src/routes/pgcArchivoRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/api/estudiantes', estudianteRoutes);
 app.use('/api/ciclos', ciclosRoutes);
 app.use('/api/profesores', profesoresRoutes);
 app.use('/api/categorias', categoriasRoutes);
+app.use("/api/pgc", pgcArchivoRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
