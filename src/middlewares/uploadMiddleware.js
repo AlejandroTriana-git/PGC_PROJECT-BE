@@ -2,17 +2,6 @@ import multer from 'multer';//Se usa para gestionar la carga de archivos
 import { FORMATOS_PERMITIDOS, TAMANO_MAXIMO_BYTES } from '../validators/archivoPgcValidator.js';
 
 const storage = multer.memoryStorage();
-const FORMATOS_PERMITIDOS = [
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'image/jpeg',
-  'image/png',
-];
 
 export const subirPdfPropuesta = multer({
   storage,

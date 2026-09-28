@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verificarToken } from "../middlewares/autenticarMiddleware.js";
+import verificarToken from "../middlewares/autenticarMiddleware.js";
 import { subirArchivoPgc } from "../middlewares/uploadMiddleware.js";
 import * as pgcArchivoController from "../controllers/pgcArchivoController.js";
 

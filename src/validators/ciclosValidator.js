@@ -64,4 +64,4 @@ async function estaDentroDeLaEtapa(id_ciclo, stage) {
 
 
 
-export { validarCiclo, estaDentroDeLaEtapa, encontrarFechasEtapas, STAGES };
+export { validarCiclo, estaDentroDeLaEtapa, encontrarFechasEtapas };
