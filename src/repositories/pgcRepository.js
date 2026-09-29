@@ -1,0 +1,121 @@
+import db from '../config/db.js';
+
+// ============================================
+// ISSUE 1: Listar propuestas aprobadas sin PGC
+// ============================================
+
+export const listarPropuestasAprobadasSinPgc = async (id_usuario) => {
+    const [propuestas] = await db.query(
+        `SELECT p.id_proposal, p.title_proposal, p.id_cycle
+         FROM proposals p
+         INNER JOIN students s ON p.id_leader = s.id_student
+         WHERE s.id_user = ?
+         AND p.state_proposal = 'Aprobada'
+         AND NOT EXISTS (SELECT 1 FROM pgc WHERE pgc.id_proposal = p.id_proposal)`,
+        [id_usuario]
+    );
+
+    for (const propuesta of propuestas) {
+        // Categorías
+        const [categorias] = await db.query(
+            `SELECT c.id_category, c.name_category
+             FROM proposal_categories pc
+             INNER JOIN categories c ON pc.id_category = c.id_category
+             WHERE pc.id_proposal = ?`,
+            [propuesta.id_proposal]
+        );
+        propuesta.categorias = categorias;
+
+        // Integrantes
+        const [integrantes] = await db.query(
+            `SELECT u.id_user, u.full_name
+             FROM proposal_students ps
+             INNER JOIN students s ON ps.id_student = s.id_student
+             INNER JOIN users u ON s.id_user = u.id_user
+             WHERE ps.id_proposal = ?`,
+            [propuesta.id_proposal]
+        );
+        propuesta.integrantes = integrantes;
+    }
+
+    return propuestas;
+};
+
+// ============================================
+// ISSUE 2: Registrar PGC
+// ============================================
+
+// Verificar si ya existe un PGC para una propuesta
+export const existePgcParaPropuesta = async (id_proposal) => {
+    const [rows] = await db.query(
+        'SELECT id_pgc FROM pgc WHERE id_proposal = ?',
+        [id_proposal]
+    );
+    return rows.length > 0;
+};
+
+// Buscar las fechas de la etapa 'Registro PGC' de un ciclo
+export const buscarFechasRegistroPgc = async (id_cycle) => {
+    const [rows] = await db.query(
+        `SELECT start_date, end_date
+         FROM cycle_dates
+         WHERE id_cycle = ? AND stage = 'Registro PGC'
+         LIMIT 1`,
+        [id_cycle]
+    );
+    return rows[0];
+};
+
+// Crear PGC (con transacción)
+export const crearPgc = async (connection, data) => {
+    const [result] = await connection.query(
+        `INSERT INTO pgc (id_cycle, id_proposal, state_pgc)
+         VALUES (?, ?, 'En Proceso')`,
+        [data.id_cycle, data.id_proposal]
+    );
+    return result.insertId;
+};
+
+// ============================================
+// ISSUE 3: Listar mis PGC
+// ============================================
+
+export const listarPgcPorUsuario = async (id_usuario) => {
+    const [rows] = await db.query(
+        `SELECT p.id_pgc, p.id_proposal, p.id_cycle, p.state_pgc, p.registered_at,
+                pr.title_proposal, pr.problem_proposal, pr.justification_proposal,
+                pr.objectives_proposal, pr.solution_proposal
+         FROM pgc p
+         INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN proposal_students ps ON pr.id_proposal = ps.id_proposal
+         INNER JOIN students s ON ps.id_student = s.id_student
+         WHERE s.id_user = ?
+         ORDER BY p.registered_at DESC`,
+        [id_usuario]
+    );
+
+    for (const pgc of rows) {
+        // Categorías (de la propuesta vinculada)
+        const [categorias] = await db.query(
+            `SELECT c.id_category, c.name_category
+             FROM proposal_categories pc
+             INNER JOIN categories c ON pc.id_category = c.id_category
+             WHERE pc.id_proposal = ?`,
+            [pgc.id_proposal]
+        );
+        pgc.categorias = categorias;
+
+        // Integrantes (de la propuesta vinculada)
+        const [integrantes] = await db.query(
+            `SELECT u.id_user, u.full_name
+             FROM proposal_students ps
+             INNER JOIN students s ON ps.id_student = s.id_student
+             INNER JOIN users u ON s.id_user = u.id_user
+             WHERE ps.id_proposal = ?`,
+            [pgc.id_proposal]
+        );
+        pgc.integrantes = integrantes;
+    }
+
+    return rows;
+};
