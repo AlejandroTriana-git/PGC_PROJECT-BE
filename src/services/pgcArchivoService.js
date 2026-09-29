@@ -113,7 +113,20 @@ async function subirArchivo(id_pgc, id_user, archivo) {
 async function listarArchivos(id_pgc, id_user) {
   await verificarPertenencia(id_pgc, id_user);
   const filas = await pgcArchivoRepository.listarPorPgc(id_pgc);
-  return Promise.all(filas.map(mapearArchivoParaFrontend));
+  return Promise.all(
+    filas.map(async (fila) => {
+      try {
+        return await mapearArchivoParaFrontend(fila);
+      } catch (error) {
+        console.error("Error generando URL firmada para archivo", fila.id_pgc_file, error.message);
+        return {
+          id_file: fila.id_pgc_file,
+          title_file: extraerTitulo(fila.storage_path),
+          url_file: null,
+        };
+      }
+    })
+  );
 }
 
 async function reemplazarArchivo(id_pgc, id_pgc_file, id_user, archivo) {
