@@ -6,12 +6,6 @@ const crearPropuesta = async (req, res) => {
     try {
         const id_user = req.usuario.id;
 
-        // DIAGNÓSTICO: ver qué llega
-        console.log('=================================');
-        console.log('BODY RECIBIDO:', req.body);
-        console.log('FILE RECIBIDO:', req.file);
-        console.log('=================================');
-
         const result = await propuestaService.crearPropuesta(req.body, id_user, req.file);
         res.status(201).json(result);
     } catch (error) {
