@@ -14,12 +14,23 @@ function mapearDatosCiclo(body) {
   };
 }
 
+//esta es la funcion traductora de la bd al frontend (mapeo de salida): el FE nunca ve name_cycle,
+//id_person_charge ni id_cycle, ve los mismos nombres con los que ya envia el body
+function mapearCicloParaFrontend(fila) {
+  return {
+    id: fila.id_cycle,
+    subject_cycle: fila.name_cycle,
+    max_members: fila.max_members,
+    id_encargado: fila.id_person_charge,
+  };
+}
+
 
 //esta funcion es la encargada de crear el ciclo vacio para luego llamarlo y diligenciarlo con los datos pertinentes
 
 async function crearCiclo(body) {
   const id_cycle = await cyclesRepository.crear(mapearDatosCiclo(body));
-  return cyclesRepository.buscarPorId(id_cycle);
+  return mapearCicloParaFrontend(await cyclesRepository.buscarPorId(id_cycle));
 }
 
 // esta funcion se revisa que el ciclo a editar exista, para que no de error en la bd
@@ -32,7 +43,7 @@ async function editarCiclo(id_cycle, body) {
   }
 
   await cyclesRepository.actualizar(id_cycle, mapearDatosCiclo(body));
-  return cyclesRepository.buscarPorId(id_cycle);
+  return mapearCicloParaFrontend(await cyclesRepository.buscarPorId(id_cycle));
 }
 // esta funcion asigna uno o varios jurados a un ciclo existente
 async function asignarJurados(id_cycle, id_jurados) {
@@ -60,7 +71,7 @@ async function asignarJurados(id_cycle, id_jurados) {
     }
   }
 
-  return cyclesRepository.buscarPorId(id_cycle);
+  return mapearCicloParaFrontend(await cyclesRepository.buscarPorId(id_cycle));
 }
 
 // esta funcion quita un jurado asignado a un ciclo
@@ -73,7 +84,7 @@ async function quitarJurado(id_cycle, id_juror) {
   }
 
   await asignacionesRepository.quitarJurado(id_cycle, id_juror);
-  return cyclesRepository.buscarPorId(id_cycle);
+  return mapearCicloParaFrontend(await cyclesRepository.buscarPorId(id_cycle));
 }
 
 // esta funcion lista los jurados asignados a un ciclo

@@ -14,7 +14,7 @@ export function autorizarEncargadoPropuesta(){
         if (!req.usuario) {
             return res.status(401).json({ mensaje: "No autenticado" });
         }
-        const idProposal = req.params.idProposal;
+        const idProposal = req.params.id;
 
         try {
             //Obtenemos el id del ciclo al que pertenece la propuesta

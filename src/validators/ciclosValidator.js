@@ -1,4 +1,10 @@
 import {obtenerFechasEtapas} from "../repositories/ciclosRepository.js" ;
+export const STAGES = {
+  RADICACION: 'Radicación',
+  REGISTRO_PGC: 'Registro PGC',
+  SUSTENTACION: 'Sustentación',
+  CALIFICACION: 'Calificación',
+};
 // esta funcion es la encargada de validar que los datos lleguen correctamente para crear o editar un ciclo
 
 function validarCiclo(body) {
