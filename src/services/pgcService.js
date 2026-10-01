@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 import * as pgcRepository from '../repositories/pgcRepository.js';
 import { buscarPropuestaPorId, buscarEstudiantePorId } from '../repositories/propuestaRepository.js';
-import { estaDentroDeLaEtapa } from '../validators/ciclosValidator.js';
+import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas  } from '../validators/ciclosValidator.js';
 
 // ============================================
 // ISSUE 1: Listar propuestas aprobadas sin PGC
@@ -41,9 +41,10 @@ export const crearPgc = async (id_proposal, id_usuario) => {
     }
 
     // 5. Verificar que esté dentro de la ventana "Registro PGC"
-    const dentroDeFecha = await estaDentroDeLaEtapa(propuesta.id_cycle, 'Registro PGC');
+    const dentroDeFecha = await estaDentroDeLaEtapa(propuesta.id_cycle, STAGES.REGISTRO_PGC);
     if (!dentroDeFecha) {
-        const fechas = await pgcRepository.buscarFechasRegistroPgc(propuesta.id_cycle);
+        //Se cambio a utilizar la funcion encontrarFechasEtapas para obtener las fechas de inicio y fin de la etapa de registro PGC
+        const fechas = await encontrarFechasEtapas(propuesta.id_cycle, STAGES.REGISTRO_PGC);
         throw {
             status: 400,
             mensaje: 'Fuera del rango de fechas',
