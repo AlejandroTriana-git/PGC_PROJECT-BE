@@ -6,7 +6,7 @@ import db from '../config/db.js';
 
 export const listarPropuestasAprobadasSinPgc = async (id_usuario) => {
     const [propuestas] = await db.query(
-        `SELECT p.id_proposal, p.title_proposal, p.id_cycle, c.name_cycle
+        `SELECT p.id_proposal, p.title_proposal, p.problem_proposal, p.justification_proposal, p.objectives_proposal, p.solution_proposal, p.id_cycle, c.name_cycle
          FROM proposals p
          INNER JOIN students s ON p.id_leader = s.id_student
          INNER JOIN cycles c ON p.id_cycle = c.id_cycle
@@ -55,17 +55,6 @@ export const existePgcParaPropuesta = async (id_proposal) => {
     return rows.length > 0;
 };
 
-// Buscar las fechas de la etapa 'Registro PGC' de un ciclo
-export const buscarFechasRegistroPgc = async (id_cycle) => {
-    const [rows] = await db.query(
-        `SELECT start_date, end_date
-         FROM cycle_dates
-         WHERE id_cycle = ? AND stage = 'Registro PGC'
-         LIMIT 1`,
-        [id_cycle]
-    );
-    return rows[0];
-};
 
 // Crear PGC (con transacción)
 export const crearPgc = async (connection, data) => {
