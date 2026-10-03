@@ -1,6 +1,5 @@
 
 
-
 -- MySQL Workbench Forward Engineering
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
@@ -14,6 +13,7 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema pgc_db
 -- -----------------------------------------------------
+
 DROP SCHEMA IF EXISTS `pgc_db`;
 CREATE SCHEMA `pgc_db` DEFAULT CHARACTER SET utf8 ;
 USE `pgc_db` ;
@@ -361,6 +361,7 @@ CREATE TABLE IF NOT EXISTS `pgc_db`.`cycle_documents` (
   PRIMARY KEY (`id_cycle_document`),
   INDEX `fk_cycle_documents_cycles1_idx` (`id_cycle` ASC) VISIBLE,
   INDEX `fk_cycle_documents_users1_idx` (`uploaded_by` ASC) VISIBLE,
+  UNIQUE INDEX `uq_cycle_doc_version` (`id_cycle` ASC, `doc_type` ASC, `title_file` ASC, `version_label` ASC) VISIBLE,
   CONSTRAINT `fk_cycle_documents_cycles1`
     FOREIGN KEY (`id_cycle`)
     REFERENCES `pgc_db`.`cycles` (`id_cycle`)
