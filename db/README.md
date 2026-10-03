@@ -1,7 +1,7 @@
 # Base de datos
 
 Esta carpeta contiene la estructura y los datos de prueba de la base de datos
-del proyecto PGC, actualizada hasta el sprint número 3.
+del proyecto PGC, actualizada hasta el sprint número 4.
 
 > **Nota:** este documento refleja el estado de la base de datos *hasta este
 > sprint*. No es una versión definitiva ni cerrada: a medida que aparezcan
@@ -11,23 +11,16 @@ del proyecto PGC, actualizada hasta el sprint número 3.
 ## Alcance del tercer sprint
 
 `schema.sql` define la estructura acumulada hasta el tercer sprint. Incluye
-todas las tablas de los sprints 1 y 2, más las nuevas de este sprint,
-agregadas mediante `migracion_sprint3.sql`:
+todas las tablas de los sprints 1, 2 y 3, más las nuevas de este sprint:
 
-- Fechas límite por ciclo y por etapa (Radicación, Registro PGC,
-  Sustentación, Calificación).
-- PGC (activación de una propuesta aprobada como proyecto formal).
-- Archivos de evidencia de un PGC.
-- *(Creadas en este sprint, sin uso todavía — ver más abajo)*: notas y
-  comentarios de jurado, y documentos oficiales de ciclo (rúbricas y
-  lineamientos).
+- Correcciones frente a la tabla de cycle_cocuemnts: Agregar el que hizo la subida dle archivo, mas title y desccipción.
 
 La base de datos utilizada sigue siendo `pgc_db`, para MySQL con motor
 InnoDB.
 
 ## Estructura del esquema
 
-### Tablas heredadas de los sprints 1 y 2
+### Tablas heredadas de los sprints 1, 2 y 3
 
 Sin cambios en su estructura. Se listan aquí solo como referencia rápida;
 la descripción completa de cada una sigue siendo válida tal como se
@@ -55,7 +48,6 @@ documentó en su momento:
 - **`proposal_students`** — integrantes de una propuesta, incluido el
   líder.
 
-### Tablas nuevas de este sprint (Sprint 3)
 
 #### `cycle_dates`
 
@@ -103,21 +95,22 @@ título/descripción asignado por quien lo sube, validado contra 10 MB
 máximo y el formato permitido. El reemplazo de un archivo es simple
 (sobrescribe la fila existente); no se guarda historial de versiones.
 
-#### `jury_grades` *(creada en este sprint, sin uso todavía — llega en Sprint 5)*
+#### `jury_grades` 
 
 Nota (0.0 a 5.0) y comentario que cada jurado deja sobre un PGC (HU-07).
 Un jurado no puede calificar dos veces el mismo PGC (`unique_pgc_juror`),
 y el acceso es privado por diseño: cada jurado solo puede consultar su
 propia fila desde el backend.
 
-#### `cycle_documents` *(creada en este sprint, sin uso todavía — llega en Sprint 5)*
+#### `cycle_documents` 
 
 Unifica dos necesidades con la misma estructura: rúbricas de calificación
 que sube el encargado de ciclo (HU-06) y lineamientos oficiales que sube
 el administrador (HU-11), diferenciadas por `doc_type`. Cada fila nueva es
 una versión distinta; la "vigente" es la de fecha más reciente para ese
 ciclo y tipo de documento — el historial de versiones queda resuelto sin
-necesitar una columna adicional.
+necesitar una columna adicional. Ademas las nuevas correciones como un 
+titulo, una descipcion y el responsbale de haber subido ese documento.
 
 ## Carga de la base de datos
 
@@ -125,7 +118,6 @@ Ejecuta los archivos en este orden:
 
 1. `schema.sql`, para crear el esquema y las tablas heredadas.
 2. `seed.sql`, para insertar los datos de prueba.
-3. `migracion_sprint3.sql`, para agregar las tablas nuevas de este sprint.
 
 Por ejemplo, desde el cliente de MySQL:
 
