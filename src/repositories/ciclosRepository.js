@@ -62,4 +62,27 @@ async function actualizarFechas(id_cycle, stage, start_date, end_date, id_usuari
 
 }
 
+//Valida si un usuario pertenece a un ciclo, ya sea como encargado, jurado o estudiante
+export const usuarioPerteneceAlCiclo = async (idUsuario, idCiclo) => {
+    const [rows] = await db.query(
+        `SELECT 1
+           FROM cycles c
+          WHERE c.id_cycle = ?
+            AND (
+                 c.id_person_charge = ?
+              OR EXISTS (
+                     SELECT 1 FROM cycle_juror cj
+                      WHERE cj.id_cycle = ? AND cj.id_juror = ?
+                 )
+              OR EXISTS (
+                     SELECT 1 FROM students s
+                      WHERE s.id_cycle = ? AND s.id_user = ?
+                 )
+            )
+          LIMIT 1`,
+        [idCiclo, idUsuario, idCiclo, idUsuario, idCiclo, idUsuario]
+    );
+    return rows.length > 0;
+};
+
 export { crear, actualizar, listarTodos, buscarPorId, obtenerFechasEtapas, obtenerFechas, actualizarFechas };
