@@ -48,9 +48,7 @@ export const obtenerDocumentosVigentes = async (idCiclo, tipoDocumento) => {
                 title_file,
                 desc_file,
                 version_label,
-                storage_path,
-                uploaded_at,
-                uploaded_by
+                storage_path
            FROM (
                 SELECT cd.*,
                        ROW_NUMBER() OVER (

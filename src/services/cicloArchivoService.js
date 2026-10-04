@@ -2,7 +2,11 @@ import * as cicloArchivoRepository from '../repositories/cicloArchivoRepository.
 import db from '../config/db.js';
 import  bucket  from '../config/firebaseConfig.js'; 
 import * as cicloRepository from '../repositories/ciclosRepository.js' ;
+
+
+// Constantes para los tipos de documentos
 const DOC_TYPE_LINEAMIENTO = 'Lineamiento';
+const DOC_TYPE_RUBRICA = 'Rubrica';
 
 // ---------- Helpers ----------
 
@@ -73,26 +77,24 @@ async function generarUrlFirmada(storage_path) {
   });
   return { url, expira_en_segundos: 3600 };
 }
-// ---------- Endpoint: crear lineamiento ----------
+// ---------- Endpoint: crear documentos, sea rubrica o lineamiento ----------
 
-export const crearLineamiento = async (datos, idUsuario, idCiclo, archivo) => {
-    // 0) Validar que el ciclo exista
+
+//Este se reutiliza para crear tanto lineamientos como rubricas, dependiendo del docType que se le pase
+const crearDocumento = async (docType, datos, idUsuario, idCiclo, archivo) => {
+    // 0) Validar ciclo
     const ciclo = await cicloRepository.buscarPorId(idCiclo);
-    if (!ciclo) {
-        throw { status: 404, mensaje: 'Ciclo no encontrado' };
-    }
-    // 1) Validaciones de entrada
+    if (!ciclo) throw { status: 404, mensaje: 'Ciclo no encontrado' };
+
+    // 1) Validaciones
     validarPDF(archivo);
     const titleFileRaw = normalizarTitleFile(datos.title_file);
     const versionLabel = normalizarVersionLabel(datos.version_label);
     const descFile = datos.desc_file ? datos.desc_file.trim() : null;
-    const docType = DOC_TYPE_LINEAMIENTO;
 
-    // 2) Segunda capa: normalizar contra títulos existentes del mismo ciclo+tipo
+    // 2) Normalizar contra título canónico
     const tituloExistente = await cicloArchivoRepository.obtenerTituloExistente(
-        idCiclo,
-        docType,
-        titleFileRaw
+        idCiclo, docType, titleFileRaw
     );
     const titleFile = tituloExistente || titleFileRaw;
 
@@ -100,20 +102,12 @@ export const crearLineamiento = async (datos, idUsuario, idCiclo, archivo) => {
     const path = `ciclos/${idCiclo}/documentos/${docType.toLowerCase()}/${sanitizarParaPath(titleFile)}_${versionLabel}_${Date.now()}.pdf`;
     await subirArchivoFirebase(path, archivo);
 
-    // 4) Insertar en BD con transacción
+    // 4) Insertar
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
         await cicloArchivoRepository.crearDocumento(
-            {
-                idCiclo,
-                idUsuario,
-                docType,
-                titleFile,
-                descFile,
-                versionLabel,
-                storagePath: path,
-            },
+            { idCiclo, idUsuario, docType, titleFile, descFile, versionLabel, storagePath: path },
             connection
         );
         await connection.commit();
@@ -128,6 +122,17 @@ export const crearLineamiento = async (datos, idUsuario, idCiclo, archivo) => {
         connection.release();
     }
 };
+
+
+// --- Wrappers por caso de uso ---
+export const crearLineamiento = (datos, idUsuario, idCiclo, archivo) =>
+    crearDocumento(DOC_TYPE_LINEAMIENTO, datos, idUsuario, idCiclo, archivo);
+
+export const crearRubrica = (datos, idUsuario, idCiclo, archivo) =>
+    crearDocumento(DOC_TYPE_RUBRICA, datos, idUsuario, idCiclo, archivo);
+
+
+
 // ---------- Endpoint: obtener documentos vigentes de un ciclo ----------
 export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
     // 0) Validar que el ciclo exista
@@ -154,12 +159,10 @@ export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
         documentos.map(async (doc) => {
             const { url, expira_en_segundos } = await generarUrlFirmada(doc.storage_path);
             return {
-                id_document: doc.id_document,
+                id_document: doc.id_cycle_document,
                 title_file: doc.title_file,
                 desc_file: doc.desc_file,
                 version_label: doc.version_label,
-                uploaded_at: doc.uploaded_at,
-                uploaded_by: doc.uploaded_by,
                 url,
                 expira_en_segundos,
                 // No exponemos storage_path crudo: el FE solo necesita la url
@@ -172,7 +175,7 @@ export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
 
 
 
-
+// ---------- Endpoint: obtener historial de versiones de un documento puntual ----------
 export const obtenerHistoriaDocumentosCiclo = async (idCiclo, titleFile, tipoDocumento) => {
     // 0) Validar que el ciclo exista
     const ciclo = await cicloRepository.buscarPorId(idCiclo);
