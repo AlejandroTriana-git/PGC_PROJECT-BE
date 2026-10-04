@@ -47,11 +47,11 @@ export function autorizarEncargadoDeCiclo() {
 
     try {
       const esEncargado = await esEncargadoDeCiclo(idCycle, req.usuario.id);
-
+      
       if (!esEncargado) {
         return res.status(403).json({ mensaje: "No eres el encargado de este ciclo" });
       }
-
+      console.log(`Usuario ${req.usuario.id} es el encargado del ciclo ${idCycle}`);
       next();
     } catch (error) {
       return res.status(500).json({ mensaje: "Error validando la autorización" });

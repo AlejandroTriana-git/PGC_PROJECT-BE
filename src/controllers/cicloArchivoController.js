@@ -1,5 +1,7 @@
 import * as cicloArchivoService from '../services/cicloArchivoService.js';
 
+
+//Función para crear un nuevo archivo de tipo lineamiento de ciclo
 export const crearLineamiento = async (req, res) => {
     try {
         const idUsuario = req.usuario.id;
@@ -21,6 +23,27 @@ export const crearLineamiento = async (req, res) => {
     }
 };
 
+//Función para crear un nuevo archivo de tipo rubrica de ciclo
+export const crearRubrica = async (req, res) => {
+    try {
+        const idUsuario = req.usuario.id;
+        const idCiclo = req.params.id;
+        await cicloArchivoService.crearRubrica(
+            req.body,
+            idUsuario,
+            idCiclo,
+            req.file
+        );
+        res.status(201).json({
+            mensaje: 'Rubrica creada exitosamente'
+        });
+    } catch (error) {
+        console.error('ERROR CREAR RUBRICA:', error);
+        res.status(error.status || 500).json({
+            mensaje: error.mensaje || 'Error interno del servidor',
+        });
+    }
+};
 //Función para obtener los docuemntos vigentes de un ciclo, filtrando por tipo de documento (lineamiento o rubrica)
 export const obtenerDocumentosCiclo = async (req, res) => { 
     
