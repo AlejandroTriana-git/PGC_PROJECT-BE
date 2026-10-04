@@ -61,4 +61,23 @@ const listarMisPgc = async (req, res) => {
     }
 };
 
-export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc };
+// ============================================
+// Ficha histórica del PGC (HU-05)
+// ============================================
+
+const obtenerPgc = async (req, res) => {
+    try {
+        const id_pgc = req.params.id;
+        const pgc = await pgcService.obtenerPgcPorId(id_pgc);
+        res.status(200).json(pgc);
+    } catch (error) {
+        console.error('ERROR OBTENER PGC:', error);
+        res.status(error.status || 500).json({
+            mensaje: error.mensaje || 'Error interno del servidor'
+        });
+    }
+};
+
+
+
+export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc, obtenerPgc };
