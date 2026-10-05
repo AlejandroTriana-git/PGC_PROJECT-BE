@@ -109,3 +109,93 @@ export const listarPgcPorUsuario = async (id_usuario) => {
 
     return rows;
 };
+// ============================================
+// HU-04: Buscador de PGC
+// ============================================
+
+//esta funcion escapa \ % y _ para que lo que escribe el usuario se busque tal cual dentro del LIKE
+//(sin esto, si el usuario escribe "%" o "_" el LIKE los toma como comodines y traeria todos los proyectos)
+const escaparLike = (texto) => texto.replace(/[\\%_]/g, '\\$&');
+
+//esta funcion arma el WHERE de la busqueda, solo con los filtros que si llegaron
+//siempre exige que la propuesta este Aprobada, y el ciclo y el estado se filtran sobre pgc (id_cycle, state_pgc)
+//devuelve el texto del WHERE (donde) y los valores que van en cada ?, en el mismo orden
+const armarCondicionesBusquedaPgc = (filtros) => {
+    //esta condicion siempre va, lo demas se va agregando segun los filtros que lleguen
+    const condiciones = ["p.state_proposal = 'Aprobada'"];
+    const valores = [];
+
+    //aca la palabra clave se busca en el titulo o en la descripcion (OR entre los dos campos)
+    if (filtros.q) {
+        const patron = `%${escaparLike(filtros.q)}%`;
+        condiciones.push('(p.title_proposal LIKE ? OR p.descr_proposal LIKE ?)');
+        valores.push(patron, patron);
+    }
+    //aca el ciclo del PGC
+    if (filtros.id_cycle) {
+        condiciones.push('pgc.id_cycle = ?');
+        valores.push(filtros.id_cycle);
+    }
+    //aca el estado del PGC (En Proceso o Terminado)
+    if (filtros.state_pgc) {
+        condiciones.push('pgc.state_pgc = ?');
+        valores.push(filtros.state_pgc);
+    }
+    //aca la categoria, se usa EXISTS y no un JOIN para que un PGC con varias categorias no salga repetido ni cuente doble
+    if (filtros.id_category) {
+        condiciones.push(
+            'EXISTS (SELECT 1 FROM proposal_categories pc WHERE pc.id_proposal = p.id_proposal AND pc.id_category = ?)'
+        );
+        valores.push(filtros.id_category);
+    }
+
+    //aca se unen todas las condiciones con AND, o sea que cada filtro que llega achica mas el resultado
+    return { donde: condiciones.join(' AND '), valores };
+};
+
+//esta funcion cuenta cuantos PGC cumplen los filtros, sirve para total_paginas y total_resultados
+export const contarPgcBuscados = async (filtros) => {
+    const { donde, valores } = armarCondicionesBusquedaPgc(filtros);
+    const [filas] = await db.query(
+        `SELECT COUNT(*) AS total
+         FROM pgc
+         INNER JOIN proposals p ON p.id_proposal = pgc.id_proposal
+         INNER JOIN cycles c ON c.id_cycle = pgc.id_cycle
+         WHERE ${donde}`,
+        valores
+    );
+    return filas[0].total;
+};
+
+//esta funcion trae una pagina de resultados, del mas reciente al mas antiguo
+//id_pgc desempata para que la paginacion no se mueva si dos PGC tienen la misma fecha
+//limite es cuantos trae (15) y desplazamiento cuantos se salta (pagina - 1 por 15)
+export const buscarPgcPaginados = async (filtros, limite, desplazamiento) => {
+    const { donde, valores } = armarCondicionesBusquedaPgc(filtros);
+    const [filas] = await db.query(
+        `SELECT pgc.id_pgc, pgc.id_proposal, pgc.state_pgc, p.title_proposal, c.name_cycle
+         FROM pgc
+         INNER JOIN proposals p ON p.id_proposal = pgc.id_proposal
+         INNER JOIN cycles c ON c.id_cycle = pgc.id_cycle
+         WHERE ${donde}
+         ORDER BY pgc.registered_at DESC, pgc.id_pgc DESC
+         LIMIT ? OFFSET ?`,
+        [...valores, limite, desplazamiento]
+    );
+    return filas;
+};
+
+//esta funcion trae las categorias de varias propuestas en UNA sola consulta, en vez de una consulta por cada resultado
+export const buscarCategoriasDeVariasPropuestas = async (ids_proposal) => {
+    //si la pagina no trajo resultados no hay nada que consultar
+    if (ids_proposal.length === 0) return [];
+    const [filas] = await db.query(
+        `SELECT pc.id_proposal, cat.id_category, cat.name_category
+         FROM proposal_categories pc
+         INNER JOIN categories cat ON cat.id_category = pc.id_category
+         WHERE pc.id_proposal IN (?)
+         ORDER BY cat.id_category ASC`,
+        [ids_proposal]
+    );
+    return filas;
+};

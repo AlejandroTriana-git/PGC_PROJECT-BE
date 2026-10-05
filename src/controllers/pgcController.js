@@ -1,4 +1,5 @@
 import * as pgcService from '../services/pgcService.js';
+import { validarBusquedaPgc, normalizarFiltrosBusquedaPgc } from '../validators/busquedaPgcValidator.js';
 
 // ============================================
 // ISSUE 1: Listar propuestas aprobadas sin PGC
@@ -58,6 +59,29 @@ const listarMisPgc = async (req, res) => {
         res.status(error.status || 500).json({
             mensaje: error.mensaje || 'Error interno del servidor'
         });
+    }
+};
+// ============================================
+// HU-04: Buscador de PGC
+// ============================================
+
+//GET /api/pgc/search?q=&categoria=&ciclo=&estado=&pagina=
+//esta funcion valida los parametros, llama al service y responde, si no hay resultados responde 200 con resultados: []
+export const buscarPgc = async (req, res) => {
+    //primero se validan los parametros, si hay errores se devuelven todos juntos en un solo mensaje
+    const errores = validarBusquedaPgc(req.query);
+    if (errores.length > 0) {
+        return res.status(400).json({ mensaje: errores.join('. ') });
+    }
+
+    try {
+        const resultado = await pgcService.buscarPgc(normalizarFiltrosBusquedaPgc(req.query));
+        return res.status(200).json(resultado);
+    } catch (error) {
+        console.error('ERROR BUSCAR PGC:', error);
+        //solo se muestra el mensaje si es un error controlado (trae status), uno de la bd no se le muestra al cliente
+        const mensaje = error.status ? (error.mensaje || error.message) : 'Error interno del servidor';
+        return res.status(error.status || 500).json({ mensaje });
     }
 };
 
