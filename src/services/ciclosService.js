@@ -26,9 +26,29 @@ function mapearCicloParaFrontend(fila) {
 }
 
 
+//esta funcion arma el error con su status para que el controller sepa que codigo devolver
+function crearError(mensaje, status) {
+  const error = new Error(mensaje);
+  error.status = status;
+  return error;
+}
+
+//aca se revisa que el encargado sea un profesor que exista, antes se guardaba cualquier id y la bd daba un error de llave foranea
+async function verificarEncargadoProfesor(id_encargado) {
+  const profesores = await usersRepository.filtrarProfesores([id_encargado]);
+  if (profesores.length === 0) throw crearError("El encargado debe ser un profesor existente", 400);
+}
+
+//esta funcion lista todos los ciclos con el mismo formato que ya devuelven crear y editar
+async function listarCiclos() {
+  const ciclos = await cyclesRepository.listarTodos();
+  return ciclos.map(mapearCicloParaFrontend);
+}
+
 //esta funcion es la encargada de crear el ciclo vacio para luego llamarlo y diligenciarlo con los datos pertinentes
 
 async function crearCiclo(body) {
+  await verificarEncargadoProfesor(body.id_encargado);
   const id_cycle = await cyclesRepository.crear(mapearDatosCiclo(body));
   return mapearCicloParaFrontend(await cyclesRepository.buscarPorId(id_cycle));
 }
@@ -42,6 +62,7 @@ async function editarCiclo(id_cycle, body) {
     throw error;
   }
 
+  await verificarEncargadoProfesor(body.id_encargado);
   await cyclesRepository.actualizar(id_cycle, mapearDatosCiclo(body));
   return mapearCicloParaFrontend(await cyclesRepository.buscarPorId(id_cycle));
 }
@@ -61,6 +82,15 @@ async function asignarJurados(id_cycle, id_jurados) {
     const error = new Error("Debe enviar al menos un jurado");
     error.status = 400;
     throw error;
+  }
+
+  //aca se revisa que todos los ids sean numeros y que todos sean profesores, si uno falla no se asigna ninguno
+  if (!listaJurados.every((id) => Number.isInteger(id) && id > 0)) {
+    throw crearError("id_jurados debe contener solo ids numericos", 400);
+  }
+  const profesores = await usersRepository.filtrarProfesores(listaJurados);
+  if (profesores.length !== new Set(listaJurados).size) {
+    throw crearError("Solo se pueden asignar profesores existentes como jurado", 400);
   }
 
   for (const id_juror of listaJurados) {
@@ -153,4 +183,4 @@ async function actualizarFechas(id_cycle, stage, fechas, id_usuario) {
   }
 }
 
-export { crearCiclo, editarCiclo, asignarJurados, quitarJurado, listarJuradosDeCiclo, listarProfesoresDisponibles, obtenerFechas, actualizarFechas };
+export { crearCiclo, listarCiclos, editarCiclo, asignarJurados, quitarJurado, listarJuradosDeCiclo, listarProfesoresDisponibles, obtenerFechas, actualizarFechas };
