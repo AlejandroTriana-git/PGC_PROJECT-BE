@@ -108,4 +108,52 @@ export const listarPgcPorUsuario = async (id_usuario) => {
     }
 
     return rows;
+
+    
+};
+
+// ============================================
+// Ficha histórica del PGC (HU-05)
+// ============================================
+
+// Buscar PGC por ID (con datos de la propuesta)
+export const buscarPgcPorId = async (id_pgc) => {
+    const [rows] = await db.query(
+        `SELECT p.id_pgc, p.id_cycle, p.id_proposal, p.id_pgc_previous, p.state_pgc,
+                p.registered_at,
+                pr.title_proposal, pr.problem_proposal, pr.justification_proposal,
+                pr.objectives_proposal, pr.solution_proposal,
+                c.name_cycle
+         FROM pgc p
+         INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN cycles c ON p.id_cycle = c.id_cycle
+         WHERE p.id_pgc = ?`,
+        [id_pgc]
+    );
+    return rows[0];
+};
+
+// Buscar categorías de una propuesta
+export const buscarCategoriasPropuesta = async (id_proposal) => {
+    const [rows] = await db.query(
+        `SELECT c.id_category, c.name_category
+         FROM proposal_categories pc
+         INNER JOIN categories c ON pc.id_category = c.id_category
+         WHERE pc.id_proposal = ?`,
+        [id_proposal]
+    );
+    return rows;
+};
+
+// Buscar integrantes de una propuesta
+export const buscarIntegrantesPropuesta = async (id_proposal) => {
+    const [rows] = await db.query(
+        `SELECT u.id_user, u.full_name
+         FROM proposal_students ps
+         INNER JOIN students s ON ps.id_student = s.id_student
+         INNER JOIN users u ON s.id_user = u.id_user
+         WHERE ps.id_proposal = ?`,
+        [id_proposal]
+    );
+    return rows;
 };

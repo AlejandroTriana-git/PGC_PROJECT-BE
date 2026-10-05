@@ -72,3 +72,36 @@ export const listarMisPgc = async (id_usuario) => {
     const pgcs = await pgcRepository.listarPgcPorUsuario(id_usuario);
     return pgcs;
 };
+
+// ============================================
+// Ficha histórica del PGC (HU-05)
+// ============================================
+
+export const obtenerPgcPorId = async (id_pgc) => {
+    // 1. Buscar el PGC
+    const pgc = await pgcRepository.buscarPgcPorId(id_pgc);
+    if (!pgc) {
+        throw { status: 404, mensaje: 'PGC no encontrado' };
+    }
+
+    // 2. Traer categorías de la propuesta
+    const categorias = await pgcRepository.buscarCategoriasPropuesta(pgc.id_proposal);
+
+    // 3. Traer integrantes de la propuesta
+    const integrantes = await pgcRepository.buscarIntegrantesPropuesta(pgc.id_proposal);
+
+    // 4. Devolver la respuesta (SIN nota ni comentarios de jurado)
+    return {
+        id_pgc: pgc.id_pgc,
+        id_pgc_previous: pgc.id_pgc_previous,
+        title_proposal: pgc.title_proposal,
+        problem_proposal: pgc.problem_proposal,
+        justification_proposal: pgc.justification_proposal,
+        objectives_proposal: pgc.objectives_proposal,
+        solution_proposal: pgc.solution_proposal,
+        categorias: categorias,
+        integrantes: integrantes,
+        name_cycle: pgc.name_cycle,
+        estado: pgc.state_pgc
+    };
+};
