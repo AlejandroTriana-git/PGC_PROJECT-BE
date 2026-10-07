@@ -14,7 +14,7 @@ export function autorizarEncargadoPropuesta(){
         if (!req.usuario) {
             return res.status(401).json({ mensaje: "No autenticado" });
         }
-        const idProposal = req.params.idProposal;
+        const idProposal = req.params.id;
 
         try {
             //Obtenemos el id del ciclo al que pertenece la propuesta
@@ -43,15 +43,15 @@ export function autorizarEncargadoDeCiclo() {
       return res.status(401).json({ mensaje: "No autenticado" });
     }
 
-    const idCycle = req.params.id_cycle || req.query.cycle;
+    const idCycle = req.params.id; // Se obtiene el id del ciclo desde los parámetros de la ruta o la query
 
     try {
       const esEncargado = await esEncargadoDeCiclo(idCycle, req.usuario.id);
-
+      
       if (!esEncargado) {
         return res.status(403).json({ mensaje: "No eres el encargado de este ciclo" });
       }
-
+      console.log(`Usuario ${req.usuario.id} es el encargado del ciclo ${idCycle}`);
       next();
     } catch (error) {
       return res.status(500).json({ mensaje: "Error validando la autorización" });

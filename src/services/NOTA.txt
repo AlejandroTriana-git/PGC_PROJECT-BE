@@ -1,0 +1,7 @@
+//PARA EL TERCER SPRINT USEN CONSTANTES CUANDO ENVIEN AL ciclosValidator.js
+// export const STAGES = {
+//   RADICACION: 'Radicación',
+//   REGISTRO_PGC: 'Registro PGC',
+//   SUSTENTACION: 'Sustentación',
+//   CALIFICACION: 'Calificación'
+// };

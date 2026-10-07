@@ -1,9 +1,18 @@
 import * as cyclesService from "../services/ciclosService.js";
 import { validarCiclo } from "../validators/ciclosValidator.js";
+
+//aca los errores controlados (los que traen status) se muestran tal cual, cualquier otro
+//(por ejemplo un fallo de mysql) se guarda en el log del servidor y al cliente solo le llega un mensaje general
+function responderError(res, error) {
+  if (error.status) return res.status(error.status).json({ mensaje: error.message || error.mensaje });
+  console.error("ERROR CICLOS:", error);
+  return res.status(500).json({ mensaje: "Error interno del servidor" });
+}
+
 //esta funcion valida el estado del body antes de realizar la consulta en la bd y responde
 // a los errores correspondientes que mande el servicio
 export async function crear(req, res) {
-  const errores = validarCiclo(req.body);
+  const errores = validarCiclo(req.body || {});
   if (errores.length > 0) {
     return res.status(400).json({ mensaje: "Datos inválidos", errores });
   }
@@ -12,14 +21,14 @@ export async function crear(req, res) {
     const ciclo = await cyclesService.crearCiclo(req.body);
     return res.status(201).json(ciclo);
   } catch (error) {
-    return res.status(error.status || 500).json({ mensaje: error.message || "Error interno" });
+    return responderError(res, error);
   }
 }
 
 //esta funcion valida el estado del body antes de editar datos en la bd y responde
 // a los errores correspondientes que mande el servicio
 export async function editar(req, res) {
-  const errores = validarCiclo(req.body);
+  const errores = validarCiclo(req.body || {});
   if (errores.length > 0) {
     return res.status(400).json({ mensaje: "Datos inválidos", errores });
   }
@@ -28,7 +37,7 @@ export async function editar(req, res) {
     const ciclo = await cyclesService.editarCiclo(req.params.id, req.body);
     return res.status(200).json(ciclo);
   } catch (error) {
-    return res.status(error.status || 500).json({ mensaje: error.message || "Error interno" });
+    return responderError(res, error);
   }
 }
 
@@ -38,39 +47,41 @@ export async function listar(req, res) {
     const ciclos = await cyclesService.listarCiclos();
     return res.status(200).json(ciclos);
   } catch (error) {
-    return res.status(500).json({ mensaje: "Error interno" });
+    return responderError(res, error);
   }
 }
 
-//aca se asigna jurados al ciclo seleccionado
-export async function asignarJurados(req, res, next) {
+//aca se asigna jurados al ciclo seleccionado, los errores salen como { mensaje } igual que en el resto de la api
+export async function asignarJurados(req, res) {
   try {
     const { id } = req.params;
-    const { id_jurados } = req.body;
+    const { id_jurados } = req.body || {};
     const ciclo = await cyclesService.asignarJurados(id, id_jurados);
     res.json(ciclo);
   } catch (error) {
-    next(error);
+    return responderError(res, error);
   }
 }
+
 //aca se quita jurados del ciclo seleccionado
-export async function quitarJurado(req, res, next) {
+export async function quitarJurado(req, res) {
   try {
     const { id, id_jurado } = req.params;
     const ciclo = await cyclesService.quitarJurado(id, id_jurado);
     res.json(ciclo);
   } catch (error) {
-    next(error);
+    return responderError(res, error);
   }
 }
+
 //aca se enlistan todos los jurados que hay
-export async function listarJurados(req, res, next) {
+export async function listarJurados(req, res) {
   try {
     const { id } = req.params;
     const jurados = await cyclesService.listarJuradosDeCiclo(id);
     res.json(jurados);
   } catch (error) {
-    next(error);
+    return responderError(res, error);
   }
 }
 
@@ -87,6 +98,30 @@ export async function listarProfesores(req, res) {
     );
     res.status(200).json(profesores);
   } catch (error) {
+    res.status(error.status || 500).json({ mensaje: error.message || 'Error interno' });
+  }
+}
+
+//esta funcion obtiene las fechas de un ciclo, si no existe el ciclo lanza un error 404, si existe pero no hay fechas devuelve []
+export async function obtenerFechas(req, res) {
+  try{
+    const id_cycle = req.params.id;
+    const fechas = await cyclesService.obtenerFechas(id_cycle);
+    res.status(200).json(fechas);
+  }catch (error) {
+    res.status(error.status || 500).json({ mensaje: error.message || 'Error interno' });
+  }
+}
+
+export async function actualizarFechas(req, res) {
+  try {
+    const id_user = req.usuario.id; // Obtener el ID del usuario autenticado
+    const id_cycle = req.params.id;
+    const stage = req.params.stage;
+    const fechas = req.body;
+    await cyclesService.actualizarFechas(id_cycle, stage, fechas, id_user);
+    res.status(200).json({ mensaje: "Fechas actualizadas correctamente" });
+  }catch (error) {
     res.status(error.status || 500).json({ mensaje: error.message || 'Error interno' });
   }
 }

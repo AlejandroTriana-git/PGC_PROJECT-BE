@@ -8,6 +8,7 @@ import {
     buscarCategoriasDePropuesta,
     eliminarIntegrantesPropuesta,
 } from '../repositories/propuestaRepository.js';
+import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas } from '../validators/ciclosValidator.js';
 
 // Validar campos obligatorios
 // NOTA: id_cycle ya no se recibe del FE — se obtiene internamente del líder en la BD
@@ -100,18 +101,33 @@ export const crearPropuesta = async (data, id_user, file) => {
         throw { status: 400, mensaje: 'El líder ya tiene una propuesta activa en este ciclo' };
     }
 
-    console.log("Integrantes recibidos:", data.integrantes.length);
-    console.log("Máximo de integrantes permitido:", ciclo.max_members);
 
     if (data.integrantes.length > ciclo.max_members) {
         throw { status: 400, mensaje: `El máximo de integrantes es ${ciclo.max_members}` };
     }
 
-    // 👇 CAMBIO: usar id_cycle (del líder), no data.id_cycle
+
+    //Verifiar que esta dentro de la fecha para registrar la propuesta, 
+    // //INCLUIDO EN EL SPRINT 4 
+
+    const dentroDeFecha = await estaDentroDeLaEtapa(id_cycle, STAGES.RADICACION);
+    if (!dentroDeFecha) {
+        const fechas = await encontrarFechasEtapas(id_cycle, STAGES.RADICACION);
+        throw {
+            status: 400,
+            mensaje: 'Fuera del rango de fechas',
+            ...(fechas && {
+                fecha_inicio_radicacion: fechas.start_date,
+                fecha_fin_radicacion: fechas.end_date
+            })
+        };
+    }
+    // CAMBIO: usar id_cycle (del líder), no data.id_cycle
     const pdf_storage_path = `propuestas/${id_cycle}/${lider.id_student}/formato-pgc-${Date.now()}.pdf`;
 
     await subirArchivoFirebase(pdf_storage_path, file);
-
+    //
+    
     const connection = await db.getConnection();
 
     try {
@@ -119,7 +135,7 @@ export const crearPropuesta = async (data, id_user, file) => {
 
         const id_proposal = await propuestaRepository.crearPropuesta(connection, {
             id_leader: lider.id_student,
-            id_cycle: id_cycle,               // 👈 ya lo estaba
+            id_cycle: id_cycle,               
             title_proposal: data.title_proposal,
             descr_proposal: data.descr_proposal,
             problem_proposal: data.problem_proposal,
@@ -407,7 +423,7 @@ async function aprobarPropuesta(id_proposal, usuario) {
   }
 
   await propuestaRepository.aprobar(id_proposal, usuario.id);
-  return {mensaje: 'Su Propuesta fue aprobada, ¡a desarrollar!'};
+  return {mensaje: 'Se aprobó la propuesta correctamente'};
 }
 
 //esta funcion es igual a la de aprobar pero además calcula el nuevo resubmit_count y decide si pasa a Rechazada o a Anulada
