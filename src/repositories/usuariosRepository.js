@@ -32,3 +32,15 @@ export const listarProfesores = async ({ idCycle, excluirEncargado, excluirJurad
     const [rows] = await db.query(query, params);
     return rows;
 };
+//de una lista de ids devuelve cuales son profesores, sirve para revisar al encargado y a los jurados
+export const filtrarProfesores = async (ids) => {
+    if (ids.length === 0) return [];
+    const [rows] = await db.query(
+        `SELECT u.id_user
+         FROM users u
+         INNER JOIN rol r ON r.id_rol = u.id_rol
+         WHERE r.name_role = 'Profesor' AND u.id_user IN (?)`,
+        [ids]
+    );
+    return rows.map((row) => row.id_user);
+};
