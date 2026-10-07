@@ -22,12 +22,14 @@ export const login = async (data) => {
     const {encargado_de, jurado_de} = await encontrarAsignacionesPorId(usuario.id_user);
       
 
+    //aca se mete el id_cycle en el token para que el FE sepa el ciclo del estudiante (null si no es estudiante)
     const token = jwt.sign(
         {
             id: usuario.id_user,
             correo: usuario.mail_user,
             rol: usuario.name_role,
             nombre: usuario.full_name,
+            id_cycle: usuario.id_cycle ?? null,
             encargado_de: encargado_de,
             jurado_de: jurado_de
         },
@@ -41,9 +43,9 @@ export const login = async (data) => {
         nombre: usuario.full_name,
         correo: usuario.mail_user,
         rol: usuario.name_role,
+        id_cycle: usuario.id_cycle ?? null,
         encargado_de: encargado_de,
         jurado_de: jurado_de,
         mensaje: 'Inicio de sesión exitoso'
     };
 };
-

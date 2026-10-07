@@ -423,7 +423,7 @@ async function aprobarPropuesta(id_proposal, usuario) {
   }
 
   await propuestaRepository.aprobar(id_proposal, usuario.id);
-  return {mensaje: 'Su Propuesta fue aprobada, ¡a desarrollar!'};
+  return {mensaje: 'Se aprobó la propuesta correctamente'};
 }
 
 //esta funcion es igual a la de aprobar pero además calcula el nuevo resubmit_count y decide si pasa a Rechazada o a Anulada

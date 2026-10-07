@@ -121,16 +121,13 @@ async function subirArchivo(id_pgc, id_user, archivo, datos) {
   }
 }
 
-//esta funcion lista los archivos del pgc, solo para los integrantes del equipo
-async function listarArchivos(id_pgc, id_user) {
-  await verificarPertenencia(id_pgc, id_user);
-  const filas = await pgcArchivoRepository.listarPorPgc(id_pgc);
+//esta funcion mapea una lista de filas, si falla la url de un archivo no se cae toda la lista, ese archivo sale con url_file en null
+async function mapearListaArchivos(filas) {
   return Promise.all(
     filas.map(async (fila) => {
       try {
         return await mapearArchivoParaFrontend(fila);
       } catch (error) {
-        //si falla la url de un archivo no se cae toda la lista, ese archivo sale con url_file en null
         console.error("Error generando URL firmada para archivo", fila.id_pgc_file, error.message);
         return {
           id_file: fila.id_pgc_file,
@@ -141,6 +138,20 @@ async function listarArchivos(id_pgc, id_user) {
       }
     })
   );
+}
+
+//esta funcion lista los archivos del pgc, solo para los integrantes del equipo
+async function listarArchivos(id_pgc, id_user) {
+  await verificarPertenencia(id_pgc, id_user);
+  const filas = await pgcArchivoRepository.listarPorPgc(id_pgc);
+  return mapearListaArchivos(filas);
+}
+
+//esta funcion lista los archivos para la ficha publica del pgc (HU-05), no revisa si es del equipo
+//porque la ficha esta abierta a los 3 roles, la existencia del pgc ya la valida pgcService
+async function listarArchivosParaFicha(id_pgc) {
+  const filas = await pgcArchivoRepository.listarPorPgc(id_pgc);
+  return mapearListaArchivos(filas);
 }
 
 //aca el archivo es opcional, si no llega solo se cambian title_file y desc_file y el archivo guardado se mantiene igual
@@ -195,4 +206,4 @@ async function eliminarArchivo(id_pgc, id_pgc_file, id_user) {
   await borrarArchivoFirebase(archivo_existente.storage_path);
 }
 
-export { subirArchivo, listarArchivos, reemplazarArchivo, eliminarArchivo };
+export { subirArchivo, listarArchivos, listarArchivosParaFicha, reemplazarArchivo, eliminarArchivo };

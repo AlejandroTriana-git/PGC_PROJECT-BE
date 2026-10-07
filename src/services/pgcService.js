@@ -3,6 +3,7 @@ import * as pgcRepository from '../repositories/pgcRepository.js';
 import { buscarPropuestaPorId, buscarEstudiantePorId } from '../repositories/propuestaRepository.js';
 import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas  } from '../validators/ciclosValidator.js';
 import { RESULTADOS_POR_PAGINA } from '../validators/busquedaPgcValidator.js';
+import { listarArchivosParaFicha } from './pgcArchivoService.js';
 
 // ============================================
 // ISSUE 1: Listar propuestas aprobadas sin PGC
@@ -91,6 +92,9 @@ export const obtenerPgcPorId = async (id_pgc) => {
     // 3. Traer integrantes de la propuesta
     const integrantes = await pgcRepository.buscarIntegrantesPropuesta(pgc.id_proposal);
 
+    //aca se traen los archivos del pgc ya con su url firmada, si no tiene queda un arreglo vacio
+    const archivos = await listarArchivosParaFicha(pgc.id_pgc);
+
     // 4. Devolver la respuesta (SIN nota ni comentarios de jurado)
     return {
         id_pgc: pgc.id_pgc,
@@ -102,6 +106,7 @@ export const obtenerPgcPorId = async (id_pgc) => {
         solution_proposal: pgc.solution_proposal,
         categorias: categorias,
         integrantes: integrantes,
+        archivos: archivos,
         name_cycle: pgc.name_cycle,
         estado: pgc.state_pgc
     };
