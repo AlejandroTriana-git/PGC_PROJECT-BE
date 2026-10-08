@@ -13,7 +13,6 @@ SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,N
 -- -----------------------------------------------------
 -- Schema pgc_db
 -- -----------------------------------------------------
-
 DROP SCHEMA IF EXISTS `pgc_db`;
 CREATE SCHEMA `pgc_db` DEFAULT CHARACTER SET utf8 ;
 USE `pgc_db` ;
@@ -352,7 +351,7 @@ CREATE TABLE IF NOT EXISTS `pgc_db`.`cycle_documents` (
   `id_cycle_document` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_cycle` INT UNSIGNED NOT NULL,
   `storage_path` VARCHAR(500) NOT NULL,
-  `doc_type` ENUM('Rúbrica', 'Lineamiento') NOT NULL,
+  `doc_type` ENUM('Rúbrica') NOT NULL,
   `version_label` VARCHAR(20) NOT NULL,
   `uploaded_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `uploaded_by` INT UNSIGNED NOT NULL,
@@ -368,6 +367,27 @@ CREATE TABLE IF NOT EXISTS `pgc_db`.`cycle_documents` (
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `fk_cycle_documents_users1`
+    FOREIGN KEY (`uploaded_by`)
+    REFERENCES `pgc_db`.`users` (`id_user`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `pgc_db`.`guideline_documents`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `pgc_db`.`guideline_documents` (
+  `id_guideline_document` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `title_file` VARCHAR(150) NOT NULL,
+  `desc_file` TEXT NULL,
+  `storage_path` VARCHAR(500) NOT NULL,
+  `version_label` VARCHAR(20) NOT NULL,
+  `uploaded_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `uploaded_by` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id_guideline_document`),
+  INDEX `fk_guideline_documents_users1_idx` (`uploaded_by` ASC) VISIBLE,
+  CONSTRAINT `fk_guideline_documents_users1`
     FOREIGN KEY (`uploaded_by`)
     REFERENCES `pgc_db`.`users` (`id_user`)
     ON DELETE RESTRICT
