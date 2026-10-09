@@ -273,3 +273,35 @@ export const listarPgcPendientesDeCalificar = async (id_juror) => {
     );
     return rows;
 };
+
+// ============================================
+// HU-07: Registrar calificación
+// ============================================
+
+// Verificar si el usuario es jurado del ciclo
+export const esJuradoDelCiclo = async (id_juror, id_cycle) => {
+    const [rows] = await db.query(
+        'SELECT 1 FROM cycle_juror WHERE id_juror = ? AND id_cycle = ?',
+        [id_juror, id_cycle]
+    );
+    return rows.length > 0;
+};
+
+// Verificar si ya calificó ese PGC
+export const yaCalificoPgc = async (id_pgc, id_juror) => {
+    const [rows] = await db.query(
+        'SELECT 1 FROM jury_grades WHERE id_pgc = ? AND id_juror = ?',
+        [id_pgc, id_juror]
+    );
+    return rows.length > 0;
+};
+
+// Insertar calificación
+export const crearCalificacion = async (id_pgc, id_juror, grade, comment) => {
+    const [result] = await db.query(
+        `INSERT INTO jury_grades (id_pgc, id_juror, grade, comment)
+         VALUES (?, ?, ?, ?)`,
+        [id_pgc, id_juror, grade, comment]
+    );
+    return result.insertId;
+};

@@ -178,3 +178,54 @@ export const listarPgcPendientesDeCalificar = async (id_juror) => {
 
     return pgcsValidos;
 };
+
+// ============================================
+// HU-07: Registrar calificación
+// ============================================
+
+export const calificarPgc = async (id_pgc, id_juror, data) => {
+    const { grade, comment } = data;
+
+    // 1. Validar campos
+    if (grade === undefined || grade === null || !comment) {
+        throw { status: 400, mensaje: 'Debe enviar grade y comment' };
+    }
+
+    // 2. Validar rango de la nota
+    const nota = Number(grade);
+    if (isNaN(nota) || nota < 0.0 || nota > 5.0) {
+        throw { status: 400, mensaje: 'La nota debe estar entre 0.0 y 5.0' };
+    }
+
+    // 3. Buscar el PGC
+    const pgc = await pgcRepository.buscarPgcPorId(id_pgc);
+    if (!pgc) {
+        throw { status: 404, mensaje: 'PGC no encontrado' };
+    }
+
+    // 4. Verificar que el usuario sea jurado del ciclo
+    const esJurado = await pgcRepository.esJuradoDelCiclo(id_juror, pgc.id_cycle);
+    if (!esJurado) {
+        throw { status: 403, mensaje: 'No eres jurado de este ciclo' };
+    }
+
+    // 5. Verificar que no haya calificado antes
+    const yaCalifico = await pgcRepository.yaCalificoPgc(id_pgc, id_juror);
+    if (yaCalifico) {
+        throw { status: 400, mensaje: 'Ya calificaste este PGC' };
+    }
+
+    // 6. Verificar ventana de "Calificación"
+    const dentroDeFecha = await estaDentroDeLaEtapa(pgc.id_cycle, STAGES.CALIFICACION);
+    if (!dentroDeFecha) {
+        throw { status: 400, mensaje: 'El periodo de calificación ha finalizado' };
+    }
+
+    // 7. Insertar la calificación
+    const id_jury_grade = await pgcRepository.crearCalificacion(id_pgc, id_juror, nota, comment);
+
+    // 8. (Día 3) Auto-transición: si todos calificaron, marcar como Terminado
+    await verificarYMarcarTerminado(id_pgc, pgc.id_cycle);
+
+    return { id_jury_grade, mensaje: 'Calificación registrada con éxito' };
+};

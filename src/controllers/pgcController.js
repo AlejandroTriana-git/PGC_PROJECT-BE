@@ -103,7 +103,7 @@ const obtenerPgc = async (req, res) => {
 };
 
 // ============================================
-// HU-07: Calificación (BE#2)
+// HU-07: Calificación 
 // ============================================
 
 const listarPgcPendientesDeCalificar = async (req, res) => {
@@ -119,4 +119,22 @@ const listarPgcPendientesDeCalificar = async (req, res) => {
     }
 };
 
-export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc, obtenerPgc, listarPgcPendientesDeCalificar };
+// ============================================
+// HU-07: Día 2 — Registrar calificación
+// ============================================
+
+const calificarPgc = async (req, res) => {
+    try {
+        const id_pgc = req.params.id_pgc;
+        const id_juror = req.usuario.id;
+        const result = await pgcService.calificarPgc(id_pgc, id_juror, req.body);
+        res.status(201).json(result);
+    } catch (error) {
+        console.error('ERROR CALIFICAR PGC:', error);
+        res.status(error.status || 500).json({
+            mensaje: error.mensaje || 'Error interno del servidor'
+        });
+    }
+};
+
+export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc, obtenerPgc, listarPgcPendientesDeCalificar, calificarPgc };
