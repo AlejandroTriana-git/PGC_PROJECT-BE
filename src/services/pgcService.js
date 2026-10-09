@@ -152,3 +152,29 @@ export const buscarPgc = async (filtros) => {
         total_resultados,
     };
 };
+
+// ============================================
+// HU-07: Calificación (BE#2)
+// ============================================
+
+// Listar PGCs pendientes de calificar
+export const listarPgcPendientesDeCalificar = async (id_juror) => {
+    const pgcs = await pgcRepository.listarPgcPendientesDeCalificar(id_juror);
+
+    // Si no hay PGCs pendientes, devolvemos arreglo vacío
+    if (pgcs.length === 0) {
+        return [];
+    }
+
+    // Validar la ventana "Calificación" para cada ciclo
+    // Si el ciclo tiene la ventana cerrada, se excluye de la lista
+    const pgcsValidos = [];
+    for (const pgc of pgcs) {
+        const dentroDeFecha = await estaDentroDeLaEtapa(pgc.id_cycle, STAGES.CALIFICACION);
+        if (dentroDeFecha) {
+            pgcsValidos.push(pgc);
+        }
+    }
+
+    return pgcsValidos;
+};

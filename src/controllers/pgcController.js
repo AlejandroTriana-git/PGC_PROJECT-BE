@@ -102,6 +102,21 @@ const obtenerPgc = async (req, res) => {
     }
 };
 
+// ============================================
+// HU-07: Calificación (BE#2)
+// ============================================
 
+const listarPgcPendientesDeCalificar = async (req, res) => {
+    try {
+        const id_juror = req.usuario.id;
+        const pgcs = await pgcService.listarPgcPendientesDeCalificar(id_juror);
+        res.status(200).json(pgcs);
+    } catch (error) {
+        console.error('ERROR LISTAR PGC PENDIENTES DE CALIFICAR:', error);
+        res.status(error.status || 500).json({
+            mensaje: error.mensaje || 'Error interno del servidor'
+        });
+    }
+};
 
-export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc, obtenerPgc };
+export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc, obtenerPgc, listarPgcPendientesDeCalificar };

@@ -247,3 +247,29 @@ export const buscarCategoriasDeVariasPropuestas = async (ids_proposal) => {
     );
     return filas;
 };
+
+// ============================================
+// HU-07: Calificación (BE#2)
+// ============================================
+
+// Listar PGCs pendientes de calificar por el jurado logueado
+export const listarPgcPendientesDeCalificar = async (id_juror) => {
+    const [rows] = await db.query(
+        `SELECT p.id_pgc, p.id_proposal, p.id_cycle, p.state_pgc, p.registered_at,
+                pr.title_proposal, pr.problem_proposal, pr.justification_proposal,
+                pr.objectives_proposal, pr.solution_proposal,
+                c.name_cycle
+         FROM pgc p
+         INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN cycles c ON p.id_cycle = c.id_cycle
+         INNER JOIN cycle_juror cj ON cj.id_cycle = p.id_cycle
+         WHERE cj.id_juror = ?
+         AND NOT EXISTS (
+             SELECT 1 FROM jury_grades jg
+             WHERE jg.id_pgc = p.id_pgc AND jg.id_juror = ?
+         )
+         ORDER BY p.registered_at ASC`,
+        [id_juror, id_juror]
+    );
+    return rows;
+};
