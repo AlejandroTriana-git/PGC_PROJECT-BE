@@ -305,3 +305,42 @@ export const crearCalificacion = async (id_pgc, id_juror, grade, comment) => {
     );
     return result.insertId;
 };
+
+// ============================================
+// HU-07: Auto-transición
+// ============================================
+
+// Contar cuántos jurados tiene el ciclo
+export const contarJuradosDelCiclo = async (id_cycle) => {
+    const [rows] = await db.query(
+        'SELECT COUNT(*) AS total FROM cycle_juror WHERE id_cycle = ?',
+        [id_cycle]
+    );
+    return rows[0].total;
+};
+
+// Contar cuántos jurados calificaron este PGC
+export const contarCalificacionesDelPgc = async (id_pgc) => {
+    const [rows] = await db.query(
+        'SELECT COUNT(*) AS total FROM jury_grades WHERE id_pgc = ?',
+        [id_pgc]
+    );
+    return rows[0].total;
+};
+
+// Calcular promedio de notas de un PGC
+export const calcularPromedioPgc = async (id_pgc) => {
+    const [rows] = await db.query(
+        'SELECT AVG(grade) AS promedio FROM jury_grades WHERE id_pgc = ?',
+        [id_pgc]
+    );
+    return rows[0].promedio;
+};
+
+// Marcar PGC como Terminado
+export const marcarPgcComoTerminado = async (id_pgc) => {
+    await db.query(
+        "UPDATE pgc SET state_pgc = 'Terminado' WHERE id_pgc = ?",
+        [id_pgc]
+    );
+};

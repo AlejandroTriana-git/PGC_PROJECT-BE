@@ -229,3 +229,21 @@ export const calificarPgc = async (id_pgc, id_juror, data) => {
 
     return { id_jury_grade, mensaje: 'Calificación registrada con éxito' };
 };
+
+// ============================================
+// HU-07: Auto-transición
+// ============================================
+
+const verificarYMarcarTerminado = async (id_pgc, id_cycle) => {
+    // 1. Contar jurados del ciclo
+    const totalJurados = await pgcRepository.contarJuradosDelCiclo(id_cycle);
+
+    // 2. Contar calificaciones del PGC
+    const totalCalificaciones = await pgcRepository.contarCalificacionesDelPgc(id_pgc);
+
+    // 3. Si todos calificaron, marcar como Terminado
+    if (totalJurados > 0 && totalJurados === totalCalificaciones) {
+        await pgcRepository.marcarPgcComoTerminado(id_pgc);
+        console.log(`✅ PGC ${id_pgc} marcado como Terminado (${totalCalificaciones}/${totalJurados} notas)`);
+    }
+};
