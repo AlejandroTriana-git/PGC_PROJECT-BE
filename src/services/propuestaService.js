@@ -5,7 +5,6 @@ import * as cyclesRepository from "../repositories/ciclosRepository.js";
 import {
     insertarCategoriaPropuesta,
     eliminarCategoriasPropuesta,
-    buscarCategoriasDePropuesta,
     eliminarIntegrantesPropuesta,
 } from '../repositories/propuestaRepository.js';
 import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas } from '../validators/ciclosValidator.js';
@@ -317,32 +316,24 @@ export const obtenerUrlPdf = async (id_proposal) => {
   };
 };
 
-// ✅ Ver mi propuesta — devuelve todos los campos que necesita el FE
+//  Ver mi propuesta — devuelve todos los campos que necesita el FE
 export const verMiPropuesta = async (id_user) => {
-    const estudiante = await propuestaRepository.buscarEstudiantePorId(id_user);
-    if (!estudiante) {
-        throw { status: 404, mensaje: 'El usuario no es estudiante' };
+    // 1. Todo el fetch relacional en un solo CALL
+    const { codigo, mensaje, propuesta, integrantes, categorias } =
+        await propuestaRepository.buscarPropuestaCompletaPorEstudiante(id_user);
+
+    if (codigo !== 1) {
+        throw { status: codigo, mensaje };
     }
 
-    const propuesta = await propuestaRepository.buscarPropuestaPorEstudiante(estudiante.id_student);
-    if (!propuesta) {
-        throw { status: 404, mensaje: 'No tienes propuestas registradas' };
-    }
-
-    // Obtener integrantes de la propuesta (sus id_user para el FE)
-    const integrantes = await propuestaRepository.buscarIntegrantesDePropuesta(propuesta.id_proposal);
-
-    // Obtener categorías de la propuesta
-    const categorias = await buscarCategoriasDePropuesta(propuesta.id_proposal);
-
-    // Generar URL firmada del PDF si existe
+    // 2. PDF: Firebase se queda en JS (el SP no sabe de storage)
     let pdf = null;
     if (propuesta.pdf_storage_path) {
         try {
             const fileRef = bucket.file(propuesta.pdf_storage_path);
             const [url] = await fileRef.getSignedUrl({
                 action: 'read',
-                expires: Date.now() + 60 * 60 * 1000, // 1 hora
+                expires: Date.now() + 60 * 60 * 1000,
             });
             pdf = { url, expira_en_segundos: 3600 };
         } catch (error) {
@@ -351,6 +342,7 @@ export const verMiPropuesta = async (id_user) => {
         }
     }
 
+    // 3. Armar la respuesta
     return {
         id_proposal:              propuesta.id_proposal,
         titulo:                   propuesta.title_proposal,
@@ -359,22 +351,17 @@ export const verMiPropuesta = async (id_user) => {
         resubmit_count:           propuesta.resubmit_count,
         id_leader:                propuesta.id_leader,
         leader_name:              propuesta.leader_name,
-        // Campos del formulario
         title_proposal:           propuesta.title_proposal,
         descr_proposal:           propuesta.descr_proposal,
         problem_proposal:         propuesta.problem_proposal,
         justification_proposal:   propuesta.justification_proposal,
         objectives_proposal:      propuesta.objectives_proposal,
         solution_proposal:        propuesta.solution_proposal,
-        // Categorías (array de {id_category, name_category})
-        categorias:               categorias,
-        // Integrantes: lista de { id_user, full_name } para mostrar nombres en el FE
-        integrantes:              integrantes.map(i => ({ id_user: i.id_user, full_name: i.full_name })),
-        // PDF con URL firmada
+        categorias,
+        integrantes,
         pdf,
     };
-}
-
+};
 
 
 
@@ -405,56 +392,39 @@ async function listarPendientesPorCiclo(id_cycle, estado, usuario) {
   return propuestaRepository.listarPorCicloYEstado(id_cycle, estado || ESTADO_PENDIENTE);
 }
 
-//esta funcion busca la propuesta, valida que exista y que el usuario sea el encargado del ciclo y que siga pendiente, y la aprueba
+
+//esta funcion busca la propuesta y la aprueba.
 async function aprobarPropuesta(id_proposal, usuario) {
-  const propuesta = await propuestaRepository.buscarPorId(id_proposal);
-  if (!propuesta) {
-    const error = new Error("Propuesta no encontrada");
-    error.status = 404;
+  const { codigo, mensaje } = await propuestaRepository.revisarPropuesta(
+    id_proposal,
+    usuario.id,
+    'APROBAR',
+    null
+  );
+
+  if (codigo !== 1) {
+    const error = new Error(mensaje);
+    error.status = codigo;
     throw error;
   }
-
-  await verificarEncargado(propuesta.id_cycle, usuario.id);
-
-  if (propuesta.state_proposal !== ESTADO_PENDIENTE) {
-    const error = new Error("Esta propuesta ya fue revisada");
-    error.status = 409;
-    throw error;
-  }
-
-  await propuestaRepository.aprobar(id_proposal, usuario.id);
-  return {mensaje: 'Se aprobó la propuesta correctamente'};
+  return { mensaje };
 }
-
-//esta funcion es igual a la de aprobar pero además calcula el nuevo resubmit_count y decide si pasa a Rechazada o a Anulada
+//esta funcion rechaza la propuesta.
 async function rechazarPropuesta(id_proposal, comentario, usuario) {
-  const propuesta = await propuestaRepository.buscarPorId(id_proposal);
-  if (!propuesta) {
-    const error = new Error("Propuesta no encontrada");
-    error.status = 404;
+const { codigo, mensaje, nuevo_resubmit } = await propuestaRepository.revisarPropuesta(
+    id_proposal,
+    usuario.id,
+    'RECHAZAR',
+    comentario
+  ); 
+
+  if (codigo !== 1) {
+    const error = new Error(mensaje);
+    error.status = codigo;
     throw error;
   }
 
-  await verificarEncargado(propuesta.id_cycle, usuario.id);
-
-  if (propuesta.state_proposal !== ESTADO_PENDIENTE) {
-    const error = new Error("Esta propuesta ya fue revisada");
-    error.status = 409;
-    throw error;
-  }
-
-  const nuevoResubmitCount = propuesta.resubmit_count + 1;
-  const nuevoEstado = nuevoResubmitCount >= 3 ? "Anulada" : "Rechazada";
-
-  await propuestaRepository.rechazar(id_proposal, {
-    rejection_comment: comentario,
-    nuevoEstado,
-    nuevoResubmitCount,
-    reviewed_by: usuario.id,
-  });
-
-  return {nuevoResubmitCount, mensaje: 'Su Propuesta fue rechazado'};
+  return { nuevoResubmitCount: nuevo_resubmit, mensaje };
 }
-
 
 export { listarPendientesPorCiclo, aprobarPropuesta, rechazarPropuesta };
