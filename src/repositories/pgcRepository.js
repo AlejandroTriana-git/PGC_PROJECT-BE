@@ -344,3 +344,42 @@ export const marcarPgcComoTerminado = async (id_pgc) => {
         [id_pgc]
     );
 };
+
+// ============================================
+// HU-07: Vista consolidada
+// ============================================
+
+// Verificar si el usuario es del equipo (líder o integrante)
+export const esDelEquipo = async (id_proposal, id_usuario) => {
+    const [rows] = await db.query(
+        `SELECT 1 FROM proposal_students ps
+         INNER JOIN students s ON ps.id_student = s.id_student
+         WHERE ps.id_proposal = ? AND s.id_user = ?`,
+        [id_proposal, id_usuario]
+    );
+    return rows.length > 0;
+};
+
+// Listar todas las calificaciones de un PGC
+export const listarCalificacionesDelPgc = async (id_pgc) => {
+    const [rows] = await db.query(
+        `SELECT jg.id_juror, u.full_name, jg.grade, jg.comment, jg.graded_at
+         FROM jury_grades jg
+         INNER JOIN users u ON jg.id_juror = u.id_user
+         WHERE jg.id_pgc = ?
+         ORDER BY jg.graded_at ASC`,
+        [id_pgc]
+    );
+    return rows;
+};
+
+// Buscar la calificación de un jurado específico
+export const buscarCalificacionDeJurado = async (id_pgc, id_juror) => {
+    const [rows] = await db.query(
+        `SELECT grade, comment, graded_at
+         FROM jury_grades
+         WHERE id_pgc = ? AND id_juror = ?`,
+        [id_pgc, id_juror]
+    );
+    return rows[0];
+};

@@ -247,3 +247,50 @@ const verificarYMarcarTerminado = async (id_pgc, id_cycle) => {
         console.log(`✅ PGC ${id_pgc} marcado como Terminado (${totalCalificaciones}/${totalJurados} notas)`);
     }
 };
+
+// ============================================
+// HU-07: Vista consolidada
+// ============================================
+
+export const obtenerCalificaciones = async (id_pgc, id_usuario) => {
+    // 1. Buscar el PGC
+    const pgc = await pgcRepository.buscarPgcPorId(id_pgc);
+    if (!pgc) {
+        throw { status: 404, mensaje: 'PGC no encontrado' };
+    }
+
+    // 2. Verificar si el usuario es del equipo (líder o integrante)
+    const esEquipo = await pgcRepository.esDelEquipo(pgc.id_proposal, id_usuario);
+
+    if (esEquipo) {
+        // 3. VISTA ESTUDIANTE: nota global + todas las notas
+        const calificaciones = await pgcRepository.listarCalificacionesDelPgc(id_pgc);
+        const promedio = await pgcRepository.calcularPromedioPgc(id_pgc);
+
+        return {
+            id_pgc: pgc.id_pgc,
+            title_proposal: pgc.title_proposal,
+            nota_global: promedio ? Number(Number(promedio).toFixed(2)) : null,
+            estado: pgc.state_pgc,
+            calificaciones: calificaciones
+        };
+    }
+
+    // 4. Verificar si es jurado
+    const esJurado = await pgcRepository.esJuradoDelCiclo(id_usuario, pgc.id_cycle);
+
+    if (esJurado) {
+        // 5. VISTA JURADO: solo su propia nota
+        const miCalificacion = await pgcRepository.buscarCalificacionDeJurado(id_pgc, id_usuario);
+
+        return {
+            id_pgc: pgc.id_pgc,
+            title_proposal: pgc.title_proposal,
+            estado: pgc.state_pgc,
+            mi_calificacion: miCalificacion || null
+        };
+    }
+
+    // 6. Si no es ni del equipo ni jurado → 403
+    throw { status: 403, mensaje: 'No tienes permiso para ver las notas de este PGC' };
+};
