@@ -23,17 +23,17 @@ router.get('/search', verificarToken, autorizarRoles('Estudiante', 'Profesor', '
 // GET /api/pgc/mine (solo Estudiante)
 router.get('/mine', verificarToken, autorizarRoles('Estudiante'), listarMisPgc);
 
-// GET /api/pgc/pending-grading (solo Profesor/Jurado) — HU-07
-router.get('/pending-grading', verificarToken, autorizarRoles('Profesor'), listarPgcPendientesDeCalificar);
+// GET /api/pgc/pendientes-calificacion (solo Profesor/Jurado) — HU-07
+router.get('/pendientes-calificacion', verificarToken, autorizarRoles('Profesor'), listarPgcPendientesDeCalificar);
 
-// ✅ GET /api/pgc/graded-by-me (solo Profesor/Jurado) — HU-07
-router.get('/graded-by-me', verificarToken, autorizarRoles('Profesor'), listarPgcCalificadosPorJurado);
+// GET /api/pgc/calificados-por-mi (solo Profesor/Jurado) — HU-07
+router.get('/calificados-por-mi', verificarToken, autorizarRoles('Profesor'), listarPgcCalificadosPorJurado);
 
-// POST /api/pgc/:id_pgc/grade (solo Profesor/Jurado) — HU-07
-router.post('/:id_pgc/grade', verificarToken, autorizarRoles('Profesor'), calificarPgc);
+// POST /api/pgc/:id_pgc/calificar (solo Profesor/Jurado) — HU-07
+router.post('/:id_pgc/calificar', verificarToken, autorizarRoles('Profesor'), calificarPgc);
 
-// GET /api/pgc/:id_pgc/grades (Estudiante del equipo o Jurado) — HU-07
-router.get('/:id_pgc/grades', verificarToken, autorizarRoles('Estudiante', 'Profesor'), obtenerCalificaciones);
+// GET /api/pgc/:id_pgc/calificaciones (Estudiante del equipo o Jurado) — HU-07
+router.get('/:id_pgc/calificaciones', verificarToken, autorizarRoles('Estudiante', 'Profesor'), obtenerCalificaciones);
 
 // GET /api/pgc/:id (los 3 roles: Estudiante, Profesor, Administrador)
 router.get('/:id', verificarToken, autorizarRoles('Estudiante', 'Profesor', 'Administrador'), obtenerPgc);
