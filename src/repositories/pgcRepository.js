@@ -74,9 +74,11 @@ export const listarPgcPorUsuario = async (id_usuario) => {
     const [rows] = await db.query(
         `SELECT p.id_pgc, p.id_proposal, p.id_cycle, p.state_pgc, p.registered_at,
                 pr.title_proposal, pr.problem_proposal, pr.justification_proposal,
-                pr.objectives_proposal, pr.solution_proposal
+                pr.objectives_proposal, pr.solution_proposal,
+                c.name_cycle
          FROM pgc p
          INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN cycles c ON p.id_cycle = c.id_cycle
          INNER JOIN proposal_students ps ON pr.id_proposal = ps.id_proposal
          INNER JOIN students s ON ps.id_student = s.id_student
          WHERE s.id_user = ?
@@ -85,7 +87,7 @@ export const listarPgcPorUsuario = async (id_usuario) => {
     );
 
     for (const pgc of rows) {
-        // Categorías (de la propuesta vinculada)
+        // Categorías
         const [categorias] = await db.query(
             `SELECT c.id_category, c.name_category
              FROM proposal_categories pc
@@ -95,7 +97,7 @@ export const listarPgcPorUsuario = async (id_usuario) => {
         );
         pgc.categorias = categorias;
 
-        // Integrantes (de la propuesta vinculada)
+        // Integrantes
         const [integrantes] = await db.query(
             `SELECT u.id_user, u.full_name
              FROM proposal_students ps
@@ -108,8 +110,6 @@ export const listarPgcPorUsuario = async (id_usuario) => {
     }
 
     return rows;
-
-    
 };
 
 // ============================================

@@ -90,6 +90,7 @@ export const obtenerPgcPorId = async (id_pgc) => {
 
     return {
         id_pgc: pgc.id_pgc,
+        id_proposal: pgc.id_proposal,
         id_pgc_previous: pgc.id_pgc_previous,
         title_proposal: pgc.title_proposal,
         problem_proposal: pgc.problem_proposal,
