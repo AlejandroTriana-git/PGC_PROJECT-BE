@@ -192,13 +192,33 @@ export const calificarPgc = async (id_pgc, id_juror, data) => {
         throw { status: 403, mensaje: 'No eres jurado de este ciclo' };
     }
 
-    // 5. ✅ PRIMERO: Verificar ventana de "Calificación"
+    // 5. Verificar ventana de "Calificación"
     const dentroDeFecha = await estaDentroDeLaEtapa(pgc.id_cycle, STAGES.CALIFICACION);
-    if (!dentroDeFecha) {
-        throw { status: 400, mensaje: 'El periodo de calificación ha finalizado' };
-    }
+if (!dentroDeFecha) {
+    const fechas = await encontrarFechasEtapas(pgc.id_cycle, STAGES.CALIFICACION);
 
-    // 6. ✅ DESPUÉS: Verificar que no haya calificado antes
+    // Formatear las fechas como DD/MM/YYYY
+    const formatearFecha = (fecha) => {
+        if (!fecha) return '';
+        const d = new Date(fecha);
+        const dia = String(d.getDate()).padStart(2, '0');
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const anio = d.getFullYear();
+        return `${dia}/${mes}/${anio}`;
+    };
+
+    const inicio = formatearFecha(fechas?.fechaInicio);  
+    const fin = formatearFecha(fechas?.fechaFin);       
+
+    throw {
+        status: 400,
+        mensaje: `Fuera del periodo de calificación (habilitado del ${inicio} al ${fin})`,
+        fecha_inicio_calificacion: fechas?.fechaInicio, 
+        fecha_fin_calificacion: fechas?.fechaFin         
+    };
+}
+
+    // 6. Verificar que no haya calificado antes
     const yaCalifico = await pgcRepository.yaCalificoPgc(id_pgc, id_juror);
     if (yaCalifico) {
         throw { status: 400, mensaje: 'Ya calificaste este PGC' };

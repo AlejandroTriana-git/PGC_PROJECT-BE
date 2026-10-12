@@ -252,17 +252,21 @@ export const buscarCategoriasDeVariasPropuestas = async (ids_proposal) => {
 // HU-07: Calificación (BE#2)
 // ============================================
 
-// Listar PGCs pendientes de calificar por el jurado logueado
+/// Listar PGCs pendientes de calificar por el jurado logueado
 export const listarPgcPendientesDeCalificar = async (id_juror) => {
     const [rows] = await db.query(
         `SELECT p.id_pgc, p.id_proposal, p.id_cycle, p.state_pgc, p.registered_at,
                 pr.title_proposal, pr.problem_proposal, pr.justification_proposal,
                 pr.objectives_proposal, pr.solution_proposal,
-                c.name_cycle
+                c.name_cycle,
+                u.full_name AS leader_name,
+                0 AS ya_calificado
          FROM pgc p
          INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
          INNER JOIN cycles c ON p.id_cycle = c.id_cycle
          INNER JOIN cycle_juror cj ON cj.id_cycle = p.id_cycle
+         INNER JOIN students s ON pr.id_leader = s.id_student
+         INNER JOIN users u ON s.id_user = u.id_user
          WHERE cj.id_juror = ?
          AND NOT EXISTS (
              SELECT 1 FROM jury_grades jg
@@ -363,7 +367,7 @@ export const esDelEquipo = async (id_proposal, id_usuario) => {
 // Listar todas las calificaciones de un PGC
 export const listarCalificacionesDelPgc = async (id_pgc) => {
     const [rows] = await db.query(
-        `SELECT jg.id_juror, u.full_name, jg.grade, jg.comment, jg.graded_at
+        `SELECT jg.id_juror, u.full_name AS juror_name, jg.grade, jg.comment, jg.graded_at
          FROM jury_grades jg
          INNER JOIN users u ON jg.id_juror = u.id_user
          WHERE jg.id_pgc = ?
