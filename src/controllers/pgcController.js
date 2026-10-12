@@ -155,4 +155,22 @@ const obtenerCalificaciones = async (req, res) => {
     }
 };
 
-export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc, obtenerPgc, listarPgcPendientesDeCalificar, calificarPgc, obtenerCalificaciones };
+// ============================================
+// HU-07: Listar PGCs calificados por el jurado logueado
+// ============================================
+
+const listarPgcCalificadosPorJurado = async (req, res) => {
+    try {
+        const id_juror = req.usuario.id;
+        const pgcs = await pgcService.listarPgcCalificadosPorJurado(id_juror);
+        res.status(200).json(pgcs);
+    } catch (error) {
+        console.error('ERROR LISTAR PGC CALIFICADOS:', error);
+        res.status(error.status || 500).json({
+            mensaje: error.mensaje || 'Error interno del servidor'
+        });
+    }
+};
+
+export { listarPropuestasAprobadasSinPgc, crearPgc, listarMisPgc, obtenerPgc, listarPgcPendientesDeCalificar, calificarPgc, obtenerCalificaciones, listarPgcCalificadosPorJurado };
+

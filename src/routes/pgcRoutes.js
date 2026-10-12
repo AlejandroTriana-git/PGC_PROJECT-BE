@@ -6,6 +6,7 @@ import {
     listarPgcPendientesDeCalificar,
     calificarPgc,
     obtenerCalificaciones,
+    listarPgcCalificadosPorJurado,
     buscarPgc
 } from '../controllers/pgcController.js';
 import verificarToken from '../middlewares/autenticarMiddleware.js';
@@ -24,6 +25,9 @@ router.get('/mine', verificarToken, autorizarRoles('Estudiante'), listarMisPgc);
 
 // GET /api/pgc/pending-grading (solo Profesor/Jurado) — HU-07
 router.get('/pending-grading', verificarToken, autorizarRoles('Profesor'), listarPgcPendientesDeCalificar);
+
+// ✅ GET /api/pgc/graded-by-me (solo Profesor/Jurado) — HU-07
+router.get('/graded-by-me', verificarToken, autorizarRoles('Profesor'), listarPgcCalificadosPorJurado);
 
 // POST /api/pgc/:id_pgc/grade (solo Profesor/Jurado) — HU-07
 router.post('/:id_pgc/grade', verificarToken, autorizarRoles('Profesor'), calificarPgc);

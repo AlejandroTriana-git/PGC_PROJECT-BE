@@ -287,3 +287,12 @@ export const obtenerCalificaciones = async (id_pgc, id_usuario) => {
 
     throw { status: 403, mensaje: 'No tienes permiso para ver las notas de este PGC' };
 };
+
+// ============================================
+// HU-07: Listar PGCs calificados por el jurado logueado
+// ============================================
+
+export const listarPgcCalificadosPorJurado = async (id_juror) => {
+    const pgcs = await pgcRepository.listarPgcCalificadosPorJurado(id_juror);
+    return pgcs;
+};

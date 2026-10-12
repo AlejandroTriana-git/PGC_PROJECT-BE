@@ -387,3 +387,27 @@ export const buscarCalificacionDeJurado = async (id_pgc, id_juror) => {
     );
     return rows[0];
 };
+
+// ============================================
+// HU-07: Listar PGCs calificados por el jurado logueado
+// ============================================
+
+export const listarPgcCalificadosPorJurado = async (id_juror) => {
+    const [rows] = await db.query(
+        `SELECT p.id_pgc, p.id_cycle, p.state_pgc,
+                pr.title_proposal,
+                c.name_cycle,
+                u.full_name AS leader_name,
+                jg.grade, jg.comment, jg.graded_at
+         FROM jury_grades jg
+         INNER JOIN pgc p ON jg.id_pgc = p.id_pgc
+         INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN cycles c ON p.id_cycle = c.id_cycle
+         INNER JOIN students s ON pr.id_leader = s.id_student
+         INNER JOIN users u ON s.id_user = u.id_user
+         WHERE jg.id_juror = ?
+         ORDER BY jg.graded_at DESC`,
+        [id_juror]
+    );
+    return rows;
+};
