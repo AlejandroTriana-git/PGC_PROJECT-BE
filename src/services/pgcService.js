@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 import * as pgcRepository from '../repositories/pgcRepository.js';
 import { buscarPropuestaPorId, buscarEstudiantePorId } from '../repositories/propuestaRepository.js';
-import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas  } from '../validators/ciclosValidator.js';
+import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas } from '../validators/ciclosValidator.js';
 import { RESULTADOS_POR_PAGINA } from '../validators/busquedaPgcValidator.js';
 import { listarArchivosParaFicha } from './pgcArchivoService.js';
 
@@ -45,7 +45,6 @@ export const crearPgc = async (id_proposal, id_usuario) => {
     // 5. Verificar que esté dentro de la ventana "Registro PGC"
     const dentroDeFecha = await estaDentroDeLaEtapa(propuesta.id_cycle, STAGES.REGISTRO_PGC);
     if (!dentroDeFecha) {
-        //Se cambio a utilizar la funcion encontrarFechasEtapas para obtener las fechas de inicio y fin de la etapa de registro PGC
         const fechas = await encontrarFechasEtapas(propuesta.id_cycle, STAGES.REGISTRO_PGC);
         throw {
             status: 400,
@@ -57,7 +56,7 @@ export const crearPgc = async (id_proposal, id_usuario) => {
         };
     }
 
-    // 6. Crear el PGC (SIN transacción)
+    // 6. Crear el PGC
     const id_pgc = await pgcRepository.crearPgc(db, {
         id_cycle: propuesta.id_cycle,
         id_proposal: id_proposal
@@ -80,22 +79,15 @@ export const listarMisPgc = async (id_usuario) => {
 // ============================================
 
 export const obtenerPgcPorId = async (id_pgc) => {
-    // 1. Buscar el PGC
     const pgc = await pgcRepository.buscarPgcPorId(id_pgc);
     if (!pgc) {
         throw { status: 404, mensaje: 'PGC no encontrado' };
     }
 
-    // 2. Traer categorías de la propuesta
     const categorias = await pgcRepository.buscarCategoriasPropuesta(pgc.id_proposal);
-
-    // 3. Traer integrantes de la propuesta
     const integrantes = await pgcRepository.buscarIntegrantesPropuesta(pgc.id_proposal);
-
-    //aca se traen los archivos del pgc ya con su url firmada, si no tiene queda un arreglo vacio
     const archivos = await listarArchivosParaFicha(pgc.id_pgc);
 
-    // 4. Devolver la respuesta (SIN nota ni comentarios de jurado)
     return {
         id_pgc: pgc.id_pgc,
         id_pgc_previous: pgc.id_pgc_previous,
@@ -111,23 +103,18 @@ export const obtenerPgcPorId = async (id_pgc) => {
         estado: pgc.state_pgc
     };
 };
+
 // ============================================
 // HU-04: Buscador de PGC
 // ============================================
 
-//esta funcion arma la respuesta del buscador con el formato que acordo el FE:
-//{ resultados, pagina_actual, total_paginas, total_resultados }
-//state_pgc sale como "estado" (mapeo de salida, el FE no ve el nombre de la columna)
 export const buscarPgc = async (filtros) => {
-    //primero se cuenta cuantos cumplen los filtros para saber cuantas paginas hay
     const total_resultados = Number(await pgcRepository.contarPgcBuscados(filtros));
     const total_paginas = Math.ceil(total_resultados / RESULTADOS_POR_PAGINA);
-    //aca se calcula cuantos resultados se salta, en la pagina 1 ninguno, en la 2 salta 15, etc
     const desplazamiento = (filtros.pagina - 1) * RESULTADOS_POR_PAGINA;
 
     const filas = await pgcRepository.buscarPgcPaginados(filtros, RESULTADOS_POR_PAGINA, desplazamiento);
 
-    //aca se piden las categorias de TODA la pagina juntas y despues se reparten por propuesta
     const categorias = await pgcRepository.buscarCategoriasDeVariasPropuestas(filas.map((fila) => fila.id_proposal));
     const categorias_por_propuesta = {};
     for (const categoria of categorias) {
@@ -138,7 +125,6 @@ export const buscarPgc = async (filtros) => {
         });
     }
 
-    //aca se arma cada resultado con los nombres que espera el FE, si no tiene categorias queda un arreglo vacio
     return {
         resultados: filas.map((fila) => ({
             id_pgc: fila.id_pgc,
@@ -161,13 +147,10 @@ export const buscarPgc = async (filtros) => {
 export const listarPgcPendientesDeCalificar = async (id_juror) => {
     const pgcs = await pgcRepository.listarPgcPendientesDeCalificar(id_juror);
 
-    // Si no hay PGCs pendientes, devolvemos arreglo vacío
     if (pgcs.length === 0) {
         return [];
     }
 
-    // Validar la ventana "Calificación" para cada ciclo
-    // Si el ciclo tiene la ventana cerrada, se excluye de la lista
     const pgcsValidos = [];
     for (const pgc of pgcs) {
         const dentroDeFecha = await estaDentroDeLaEtapa(pgc.id_cycle, STAGES.CALIFICACION);
@@ -180,7 +163,7 @@ export const listarPgcPendientesDeCalificar = async (id_juror) => {
 };
 
 // ============================================
-// HU-07: Registrar calificación
+// HU-07: Registrar calificación (ORDEN CORREGIDO)
 // ============================================
 
 export const calificarPgc = async (id_pgc, id_juror, data) => {
@@ -209,22 +192,22 @@ export const calificarPgc = async (id_pgc, id_juror, data) => {
         throw { status: 403, mensaje: 'No eres jurado de este ciclo' };
     }
 
-    // 5. Verificar que no haya calificado antes
-    const yaCalifico = await pgcRepository.yaCalificoPgc(id_pgc, id_juror);
-    if (yaCalifico) {
-        throw { status: 400, mensaje: 'Ya calificaste este PGC' };
-    }
-
-    // 6. Verificar ventana de "Calificación"
+    // 5. ✅ PRIMERO: Verificar ventana de "Calificación"
     const dentroDeFecha = await estaDentroDeLaEtapa(pgc.id_cycle, STAGES.CALIFICACION);
     if (!dentroDeFecha) {
         throw { status: 400, mensaje: 'El periodo de calificación ha finalizado' };
     }
 
+    // 6. ✅ DESPUÉS: Verificar que no haya calificado antes
+    const yaCalifico = await pgcRepository.yaCalificoPgc(id_pgc, id_juror);
+    if (yaCalifico) {
+        throw { status: 400, mensaje: 'Ya calificaste este PGC' };
+    }
+
     // 7. Insertar la calificación
     const id_jury_grade = await pgcRepository.crearCalificacion(id_pgc, id_juror, nota, comment);
 
-    // 8. (Día 3) Auto-transición: si todos calificaron, marcar como Terminado
+    // 8. Auto-transición
     await verificarYMarcarTerminado(id_pgc, pgc.id_cycle);
 
     return { id_jury_grade, mensaje: 'Calificación registrada con éxito' };
@@ -235,13 +218,9 @@ export const calificarPgc = async (id_pgc, id_juror, data) => {
 // ============================================
 
 const verificarYMarcarTerminado = async (id_pgc, id_cycle) => {
-    // 1. Contar jurados del ciclo
     const totalJurados = await pgcRepository.contarJuradosDelCiclo(id_cycle);
-
-    // 2. Contar calificaciones del PGC
     const totalCalificaciones = await pgcRepository.contarCalificacionesDelPgc(id_pgc);
 
-    // 3. Si todos calificaron, marcar como Terminado
     if (totalJurados > 0 && totalJurados === totalCalificaciones) {
         await pgcRepository.marcarPgcComoTerminado(id_pgc);
         console.log(`✅ PGC ${id_pgc} marcado como Terminado (${totalCalificaciones}/${totalJurados} notas)`);
@@ -253,17 +232,14 @@ const verificarYMarcarTerminado = async (id_pgc, id_cycle) => {
 // ============================================
 
 export const obtenerCalificaciones = async (id_pgc, id_usuario) => {
-    // 1. Buscar el PGC
     const pgc = await pgcRepository.buscarPgcPorId(id_pgc);
     if (!pgc) {
         throw { status: 404, mensaje: 'PGC no encontrado' };
     }
 
-    // 2. Verificar si el usuario es del equipo (líder o integrante)
     const esEquipo = await pgcRepository.esDelEquipo(pgc.id_proposal, id_usuario);
 
     if (esEquipo) {
-        // 3. VISTA ESTUDIANTE: nota global + todas las notas
         const calificaciones = await pgcRepository.listarCalificacionesDelPgc(id_pgc);
         const promedio = await pgcRepository.calcularPromedioPgc(id_pgc);
 
@@ -276,11 +252,9 @@ export const obtenerCalificaciones = async (id_pgc, id_usuario) => {
         };
     }
 
-    // 4. Verificar si es jurado
     const esJurado = await pgcRepository.esJuradoDelCiclo(id_usuario, pgc.id_cycle);
 
     if (esJurado) {
-        // 5. VISTA JURADO: solo su propia nota
         const miCalificacion = await pgcRepository.buscarCalificacionDeJurado(id_pgc, id_usuario);
 
         return {
@@ -291,6 +265,5 @@ export const obtenerCalificaciones = async (id_pgc, id_usuario) => {
         };
     }
 
-    // 6. Si no es ni del equipo ni jurado → 403
     throw { status: 403, mensaje: 'No tienes permiso para ver las notas de este PGC' };
 };
