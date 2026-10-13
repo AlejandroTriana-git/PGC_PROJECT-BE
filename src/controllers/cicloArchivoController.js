@@ -1,15 +1,14 @@
 import * as cicloArchivoService from '../services/cicloArchivoService.js';
 
 
-//Función para crear un nuevo archivo de tipo lineamiento de ciclo
+//esta funcion crea un lineamiento global (ya no va por ciclo), o una version nueva de uno que ya existe
 export const crearLineamiento = async (req, res) => {
     try {
         const idUsuario = req.usuario.id;
-        const idCiclo = req.params.id;
+        //req.body || {} por si llega sin body
         await cicloArchivoService.crearLineamiento(
-            req.body,
+            req.body || {},
             idUsuario,
-            idCiclo,
             req.file
         );
         res.status(201).json({
@@ -44,14 +43,14 @@ export const crearRubrica = async (req, res) => {
         });
     }
 };
-//Función para obtener los docuemntos vigentes de un ciclo, filtrando por tipo de documento (lineamiento o rubrica)
+//Función para obtener los docuemntos vigentes de un ciclo, filtrando por tipo de documento (rubrica)
 export const obtenerDocumentosCiclo = async (req, res) => { 
     
 
     try {
         
         const idCiclo = req.params.id;
-        const tipoDocumento = req.query.tipo; // 'Lineamiento' o 'Rubrica'
+        const tipoDocumento = req.query.tipo; // 'Rúbrica'
         const documentos = await cicloArchivoService.obtenerDocumentosCiclo(idCiclo, tipoDocumento);
         res.status(200).json(documentos);
 
@@ -66,13 +65,13 @@ export const obtenerDocumentosCiclo = async (req, res) => {
 
 };
 
-//Obtener el historial de versiones de un documento puntual (lineamiento o rubrica) de un ciclo
+//Obtener el historial de versiones de un documento puntual (rubrica) de un ciclo
 export const obtenerHistoriaDocumentosCiclo = async (req, res) => { 
 
     try {
         const idCiclo = req.params.id;
         const titleFile = req.params.title_file;
-        const tipoDocumento = req.query.tipo; // 'Lineamiento' o 'Rubrica'
+        const tipoDocumento = req.query.tipo; // 'Rúbrica'
         const historial = await cicloArchivoService.obtenerHistoriaDocumentosCiclo(idCiclo, titleFile, tipoDocumento);
         
         res.status(200).json(historial);
@@ -85,3 +84,31 @@ export const obtenerHistoriaDocumentosCiclo = async (req, res) => {
     }
 
  };
+
+//GET /api/lineamientos
+//esta funcion devuelve la version vigente de cada lineamiento global
+export const obtenerLineamientos = async (req, res) => {
+    try {
+        const lineamientos = await cicloArchivoService.obtenerLineamientos();
+        res.status(200).json(lineamientos);
+    } catch (error) {
+        console.error('ERROR OBTENER LINEAMIENTOS:', error);
+        res.status(error.status || 500).json({
+            mensaje: error.mensaje || 'Error interno del servidor',
+        });
+    }
+};
+
+//GET /api/lineamientos/:title_file/historial
+//esta funcion devuelve todas las versiones de un lineamiento global
+export const obtenerHistoriaLineamiento = async (req, res) => {
+    try {
+        const historial = await cicloArchivoService.obtenerHistoriaLineamiento(req.params.title_file);
+        res.status(200).json(historial);
+    } catch (error) {
+        console.error('ERROR OBTENER HISTORIAL LINEAMIENTO:', error);
+        res.status(error.status || 500).json({
+            mensaje: error.mensaje || 'Error interno del servidor',
+        });
+    }
+};
