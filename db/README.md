@@ -173,11 +173,47 @@ sube el encargado del ciclo.
 
 ## Carga de la base de datos
 
-Ejecuta los archivos en este orden:
+En este sprint se implementó un sprit para evitar la tarea ardua de ejecutar 
+archivo por archivo en MySQL, ejecuta estos pasos en orden:
 
-1. `schema.sql`, para crear el esquema y las tablas heredadas.
-2. `seed.sql`, para insertar los datos de prueba, hasta este punto la seed ya trae el TRUNCATE.
+1. Tener claro las credenciales de .env 
+2. Tener la ultima versión de la caepeta db
+3. Ejecutar en la consola el comando:
 
+```bash
+npm run db:reset
+```
+4. Verificar que todo salga correctamante de esta manera:
+
+```bash
+ Iniciando setup de BD: ***
+
+🗑️  Dropeando base de datos "***" si existe...
+📦 Creando base de datos "***"...
+
+📂 schema
+   ✅ schema.sql (18 statements)
+
+📂 seed
+   ✅ seed.sql (89 statements)
+
+📂 sp
+   ✅ sp\01_sp_crear_pgc.sql (2 statements)
+   ✅ sp\02_sp_obtener_pgc_por_id.sql (2 statements)
+   ✅ sp\03_sp_buscar_pgc.sql (2 statements)
+   ✅ sp\04_sp_ver_mi_propuesta.sql (2 statements)
+   ✅ sp\05_sp_revisar_propuesta.sql (2 statements)
+
+📂 triggers
+   ✅ triggers\01_trg_proposals_after_update_state.sql (2 statements)
+   ✅ triggers\02_trg_cycle_dates_after_update.sql (2 statements)
+   ✅ triggers\03_trg_jury_grades_before_update.sql (2 statements)
+   ✅ triggers\04_trg_jury_grades_before_delete.sql (2 statements)
+   ✅ triggers\05_trg_pgc_before_insert.sql (2 statements)
+   ✅ triggers\06_trg_jury_grades_before_insert.sql (2 statements)
+
+✨ Base de datos lista.
+```
 
 ## Datos de prueba
 

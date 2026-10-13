@@ -17,8 +17,6 @@
 -- con volver a ejecutar este archivo.
 -- =====================================================================
 SET NAMES utf8mb4;
-USE `pgc_db`;
-
 -- ---------------------------------------------------------------------
 -- 0. LIMPIEZA (reinicia también los AUTO_INCREMENT)
 -- ---------------------------------------------------------------------
@@ -40,6 +38,8 @@ TRUNCATE TABLE `cycles`;
 TRUNCATE TABLE `categories`;
 TRUNCATE TABLE `users`;
 TRUNCATE TABLE `rol`;
+TRUNCATE TABLE `cycle_dates_history`;
+TRUNCATE TABLE `proposal_state_history`;
 SET FOREIGN_KEY_CHECKS = @OLD_FK;
 
 -- ---------------------------------------------------------------------
