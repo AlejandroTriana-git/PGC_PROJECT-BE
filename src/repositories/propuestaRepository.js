@@ -99,22 +99,36 @@ export async function esMiembroDePropuesta(id_proposal, id_user) {
   );
   return rows.length > 0;
 }
-//Buscar la propuesta del estudiante
-export const buscarPropuestaPorEstudiante = async (id_student) => {
-    const [rows] = await db.query(
-        `SELECT p.*, u.full_name AS leader_name
-         FROM proposals p
-         INNER JOIN proposal_students ps ON p.id_proposal = ps.id_proposal
-         INNER JOIN students s ON p.id_leader = s.id_student
-         INNER JOIN users u ON s.id_user = u.id_user
-         WHERE ps.id_student = ?
-         AND p.state_proposal IN ('Pendiente de validación', 'Aprobada', 'Rechazada', 'Anulada')
-         ORDER BY p.created_at DESC
-         LIMIT 1`,
-        [id_student]
-    );
-    return rows[0];
+
+export const buscarPropuestaCompletaPorEstudiante = async (id_user) => {
+    const conn = await db.getConnection();
+    try {
+        const [resultSets] = await conn.query(
+            'CALL sp_ver_mi_propuesta(?, @codigo, @mensaje)',
+            [id_user]
+        );
+
+        const [[{ codigo, mensaje }]] = await conn.query(
+            'SELECT @codigo AS codigo, @mensaje AS mensaje'
+        );
+
+        // Si algo falló (404, 500), devolvemos solo el estado
+        if (codigo !== 1) {
+            return { codigo, mensaje, propuesta: null, integrantes: [], categorias: [] };
+        }
+
+        return {
+            codigo,
+            mensaje,
+            propuesta:   resultSets[0]?.[0] || null,  // primer result set, primera fila
+            integrantes: resultSets[1]      || [],
+            categorias:  resultSets[2]      || []
+        };
+    } finally {
+        conn.release();
+    }
 };
+
 
 
 
@@ -176,38 +190,39 @@ async function listarPorCicloYEstado(id_cycle, state_proposal) {
   return filas;
 }
 
-//estas dos funcion determinan si el estado de la propuesta va a ser rechazado o aprobado
-async function aprobar(id_proposal, reviewed_by) {
-  await db.query(
-    `UPDATE proposals
-     SET state_proposal = 'Aprobada', reviewed_by = ?, reviewed_at = NOW()
-     WHERE id_proposal = ?`,
-    [reviewed_by, id_proposal]
-  );
-}
 
-async function rechazar(id_proposal, { rejection_comment, nuevoEstado, nuevoResubmitCount, reviewed_by }) {
-  await db.query(
-    `UPDATE proposals
-     SET state_proposal = ?, rejection_comment = ?, resubmit_count = ?,
-         reviewed_by = ?, reviewed_at = NOW()
-     WHERE id_proposal = ?`,
-    [nuevoEstado, rejection_comment, nuevoResubmitCount, reviewed_by, id_proposal]
-  );
-}
+/**
+ * Llama al SP que aprueba o rechaza una propuesta.
+ * El SP valida internamente: existencia, estado pendiente y encargado del ciclo.
+ *
+ * @param {number}      id_proposal
+ * @param {number}      id_usuario   id del profesor que revisa
+ * @param {'APROBAR'|'RECHAZAR'} accion
+ * @param {string|null} comentario   requerido solo si accion === 'RECHAZAR'
+ * @returns {Promise<{codigo:number, mensaje:string, nuevo_resubmit:number|null}>}
+ */
+export const revisarPropuesta = async (id_proposal, id_usuario, accion, comentario = null) => {
+    const conn = await db.getConnection();
+    try {
+        await conn.query(
+            'CALL sp_revisar_propuesta(?, ?, ?, ?, @resubmit, @codigo, @mensaje)',
+            [id_proposal, id_usuario, accion, comentario]
+        );
 
-// Buscar integrantes de una propuesta y devolver sus id_user (para el FE)
-export async function buscarIntegrantesDePropuesta(id_proposal) {
-  const [rows] = await db.query(
-    `SELECT s.id_student, u.id_user, u.full_name
-     FROM proposal_students ps
-     INNER JOIN students s ON s.id_student = ps.id_student
-     INNER JOIN users   u ON u.id_user    = s.id_user
-     WHERE ps.id_proposal = ?`,
-    [id_proposal]
-  );
-  return rows;
-}
+        // Leemos las OUT variables en la MISMA conexión
+        const [[{ resubmit, codigo, mensaje }]] = await conn.query(
+            'SELECT @resubmit AS resubmit, @codigo AS codigo, @mensaje AS mensaje'
+        );
+
+        return {
+            codigo,
+            mensaje,
+            nuevo_resubmit: resubmit
+        };
+    } finally {
+        conn.release();
+    }
+};
 
 // Eliminar todos los integrantes de una propuesta (para reenvío)
 export const eliminarIntegrantesPropuesta = async (connection, id_proposal) => {
@@ -233,17 +248,5 @@ export const eliminarCategoriasPropuesta = async (connection, id_proposal) => {
     );
 };
 
-// Obtener las categorías asociadas a una propuesta
-export async function buscarCategoriasDePropuesta(id_proposal) {
-    const [rows] = await db.query(
-        `SELECT c.id_category, c.name_category
-         FROM proposal_categories pc
-         INNER JOIN categories c ON c.id_category = pc.id_category
-         WHERE pc.id_proposal = ?
-         ORDER BY c.id_category ASC`,
-        [id_proposal]
-    );
-    return rows;
-}
 
-export { buscarPorId, listarPorCicloYEstado, aprobar, rechazar };
+export { buscarPorId, listarPorCicloYEstado };
