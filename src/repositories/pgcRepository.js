@@ -74,9 +74,11 @@ export const listarPgcPorUsuario = async (id_usuario) => {
     const [rows] = await db.query(
         `SELECT p.id_pgc, p.id_proposal, p.id_cycle, p.state_pgc, p.registered_at,
                 pr.title_proposal, pr.problem_proposal, pr.justification_proposal,
-                pr.objectives_proposal, pr.solution_proposal
+                pr.objectives_proposal, pr.solution_proposal,
+                c.name_cycle
          FROM pgc p
          INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN cycles c ON p.id_cycle = c.id_cycle
          INNER JOIN proposal_students ps ON pr.id_proposal = ps.id_proposal
          INNER JOIN students s ON ps.id_student = s.id_student
          WHERE s.id_user = ?
@@ -85,7 +87,7 @@ export const listarPgcPorUsuario = async (id_usuario) => {
     );
 
     for (const pgc of rows) {
-        // Categorías (de la propuesta vinculada)
+        // Categorías
         const [categorias] = await db.query(
             `SELECT c.id_category, c.name_category
              FROM proposal_categories pc
@@ -95,7 +97,7 @@ export const listarPgcPorUsuario = async (id_usuario) => {
         );
         pgc.categorias = categorias;
 
-        // Integrantes (de la propuesta vinculada)
+        // Integrantes
         const [integrantes] = await db.query(
             `SELECT u.id_user, u.full_name
              FROM proposal_students ps
@@ -108,8 +110,6 @@ export const listarPgcPorUsuario = async (id_usuario) => {
     }
 
     return rows;
-
-    
 };
 
 // ============================================
@@ -246,4 +246,168 @@ export const buscarCategoriasDeVariasPropuestas = async (ids_proposal) => {
         [ids_proposal]
     );
     return filas;
+};
+
+// ============================================
+// HU-07: Calificación (BE#2)
+// ============================================
+
+/// Listar PGCs pendientes de calificar por el jurado logueado
+export const listarPgcPendientesDeCalificar = async (id_juror) => {
+    const [rows] = await db.query(
+        `SELECT p.id_pgc, p.id_proposal, p.id_cycle, p.state_pgc, p.registered_at,
+                pr.title_proposal, pr.problem_proposal, pr.justification_proposal,
+                pr.objectives_proposal, pr.solution_proposal,
+                c.name_cycle,
+                u.full_name AS leader_name,
+                0 AS ya_calificado
+         FROM pgc p
+         INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN cycles c ON p.id_cycle = c.id_cycle
+         INNER JOIN cycle_juror cj ON cj.id_cycle = p.id_cycle
+         INNER JOIN students s ON pr.id_leader = s.id_student
+         INNER JOIN users u ON s.id_user = u.id_user
+         WHERE cj.id_juror = ?
+         AND NOT EXISTS (
+             SELECT 1 FROM jury_grades jg
+             WHERE jg.id_pgc = p.id_pgc AND jg.id_juror = ?
+         )
+         ORDER BY p.registered_at ASC`,
+        [id_juror, id_juror]
+    );
+    return rows;
+};
+
+// ============================================
+// HU-07: Registrar calificación
+// ============================================
+
+// Verificar si el usuario es jurado del ciclo
+export const esJuradoDelCiclo = async (id_juror, id_cycle) => {
+    const [rows] = await db.query(
+        'SELECT 1 FROM cycle_juror WHERE id_juror = ? AND id_cycle = ?',
+        [id_juror, id_cycle]
+    );
+    return rows.length > 0;
+};
+
+// Verificar si ya calificó ese PGC
+export const yaCalificoPgc = async (id_pgc, id_juror) => {
+    const [rows] = await db.query(
+        'SELECT 1 FROM jury_grades WHERE id_pgc = ? AND id_juror = ?',
+        [id_pgc, id_juror]
+    );
+    return rows.length > 0;
+};
+
+// Insertar calificación
+export const crearCalificacion = async (id_pgc, id_juror, grade, comment) => {
+    const [result] = await db.query(
+        `INSERT INTO jury_grades (id_pgc, id_juror, grade, comment)
+         VALUES (?, ?, ?, ?)`,
+        [id_pgc, id_juror, grade, comment]
+    );
+    return result.insertId;
+};
+
+// ============================================
+// HU-07: Auto-transición
+// ============================================
+
+// Contar cuántos jurados tiene el ciclo
+export const contarJuradosDelCiclo = async (id_cycle) => {
+    const [rows] = await db.query(
+        'SELECT COUNT(*) AS total FROM cycle_juror WHERE id_cycle = ?',
+        [id_cycle]
+    );
+    return rows[0].total;
+};
+
+// Contar cuántos jurados calificaron este PGC
+export const contarCalificacionesDelPgc = async (id_pgc) => {
+    const [rows] = await db.query(
+        'SELECT COUNT(*) AS total FROM jury_grades WHERE id_pgc = ?',
+        [id_pgc]
+    );
+    return rows[0].total;
+};
+
+// Calcular promedio de notas de un PGC
+export const calcularPromedioPgc = async (id_pgc) => {
+    const [rows] = await db.query(
+        'SELECT AVG(grade) AS promedio FROM jury_grades WHERE id_pgc = ?',
+        [id_pgc]
+    );
+    return rows[0].promedio;
+};
+
+// Marcar PGC como Terminado
+export const marcarPgcComoTerminado = async (id_pgc) => {
+    await db.query(
+        "UPDATE pgc SET state_pgc = 'Terminado' WHERE id_pgc = ?",
+        [id_pgc]
+    );
+};
+
+// ============================================
+// HU-07: Vista consolidada
+// ============================================
+
+// Verificar si el usuario es del equipo (líder o integrante)
+export const esDelEquipo = async (id_proposal, id_usuario) => {
+    const [rows] = await db.query(
+        `SELECT 1 FROM proposal_students ps
+         INNER JOIN students s ON ps.id_student = s.id_student
+         WHERE ps.id_proposal = ? AND s.id_user = ?`,
+        [id_proposal, id_usuario]
+    );
+    return rows.length > 0;
+};
+
+// Listar todas las calificaciones de un PGC
+export const listarCalificacionesDelPgc = async (id_pgc) => {
+    const [rows] = await db.query(
+        `SELECT jg.id_juror, u.full_name AS juror_name, jg.grade, jg.comment, jg.graded_at
+         FROM jury_grades jg
+         INNER JOIN users u ON jg.id_juror = u.id_user
+         WHERE jg.id_pgc = ?
+         ORDER BY jg.graded_at ASC`,
+        [id_pgc]
+    );
+    return rows;
+};
+
+// Buscar la calificación de un jurado específico
+export const buscarCalificacionDeJurado = async (id_pgc, id_juror) => {
+    const [rows] = await db.query(
+        `SELECT grade, comment, graded_at
+         FROM jury_grades
+         WHERE id_pgc = ? AND id_juror = ?`,
+        [id_pgc, id_juror]
+    );
+    return rows[0];
+};
+
+// ============================================
+// HU-07: Listar PGCs calificados por el jurado logueado
+// ============================================
+
+export const listarPgcCalificadosPorJurado = async (id_juror) => {
+    const [rows] = await db.query(
+        `SELECT p.id_pgc, p.id_cycle, p.state_pgc,
+                pr.title_proposal,
+                c.name_cycle,
+                u.full_name AS leader_name,
+                jg.grade, jg.comment, jg.graded_at
+         FROM jury_grades jg
+         INNER JOIN pgc p ON jg.id_pgc = p.id_pgc
+         INNER JOIN proposals pr ON p.id_proposal = pr.id_proposal
+         INNER JOIN cycles c ON p.id_cycle = c.id_cycle
+         INNER JOIN students s ON pr.id_leader = s.id_student
+         INNER JOIN users u ON s.id_user = u.id_user
+         WHERE jg.id_juror = ?
+         ORDER BY jg.graded_at DESC`,
+        [id_juror]
+    );
+    return rows;
 };
