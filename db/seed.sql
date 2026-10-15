@@ -121,10 +121,10 @@ INSERT INTO `users` (`id_rol`, `mail_user`, `password_user`, `full_name`) VALUES
   (@rol_est, 'ealejandroprieto@cundinamarcau.edu.co', @pw_est, 'Esteban Alejandro Prieto Cantor'),  -- Equipo 10
   (@rol_est, 'bduvanlozano@cundinamarcau.edu.co', @pw_est, 'Bairon Duvan Lozano Zamudio'),  -- Equipo 11 (líder)
   (@rol_est, 'juandiegoguerrero@cundinamarcau.edu.co', @pw_est, 'Juan Diego Guerrero Amaya'),  -- Equipo 11
-  (@rol_est, 'sergioacamacho@cundinamarcau.edu.co', @pw_est, 'Sergio Andres Camacho Bonilla');  -- Equipo 11
-  (@rol_est, 'sinciclo1@cundinamarcau.edu.co', @pw_est, 'Estudiante Sin Ciclo 1');  -- Estudiante sin ciclo
-  (@rol_est, 'sinciclo2@cundinamarcau.edu.co', @pw_est, 'Estudiante Sin Ciclo 2');  -- Estudiante sin ciclo
-  (@rol_est, 'sinciclo3@cundinamarcau.edu.co', @pw_est, 'Estudiante Sin Ciclo 3');  -- Estudiante sin ciclo
+  (@rol_est, 'sergioacamacho@cundinamarcau.edu.co', @pw_est, 'Sergio Andres Camacho Bonilla'), -- Equipo 11
+  (@rol_est, 'sinciclo1@cundinamarcau.edu.co', @pw_est, 'Estudiante Sin Ciclo 1'),  -- Estudiantes sin ciclo
+  (@rol_est, 'sinciclo2@cundinamarcau.edu.co', @pw_est, 'Estudiante Sin Ciclo 2'), 
+  (@rol_est, 'sinciclo3@cundinamarcau.edu.co', @pw_est, 'Estudiante Sin Ciclo 3');  
 
 -- ---------------------------------------------------------------------
 -- 3. Ciclos (cada uno con su profesor encargado)
