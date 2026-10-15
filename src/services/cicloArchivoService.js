@@ -4,9 +4,10 @@ import  bucket  from '../config/firebaseConfig.js';
 import * as cicloRepository from '../repositories/ciclosRepository.js' ;
 
 
-// Constantes para los tipos de documentos
-const DOC_TYPE_LINEAMIENTO = 'Lineamiento';
-const DOC_TYPE_RUBRICA = 'Rubrica';
+// Constante para el tipo de documento, tiene que ser igual al ENUM de cycle_documents.doc_type (con tilde)
+// los lineamientos ya no van aca, ahora estan en guideline_documents (ver lineamientoService.js)
+const DOC_TYPE_RUBRICA = 'Rúbrica';
+const TIPOS_PERMITIDOS = [DOC_TYPE_RUBRICA];
 
 // ---------- Helpers ----------
 
@@ -125,9 +126,6 @@ const crearDocumento = async (docType, datos, idUsuario, idCiclo, archivo) => {
 
 
 // --- Wrappers por caso de uso ---
-export const crearLineamiento = (datos, idUsuario, idCiclo, archivo) =>
-    crearDocumento(DOC_TYPE_LINEAMIENTO, datos, idUsuario, idCiclo, archivo);
-
 export const crearRubrica = (datos, idUsuario, idCiclo, archivo) =>
     crearDocumento(DOC_TYPE_RUBRICA, datos, idUsuario, idCiclo, archivo);
 
@@ -140,9 +138,10 @@ export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
     if (!ciclo) {
         throw { status: 404, mensaje: 'Ciclo no encontrado' };
     }
-    // Si no llega tipo, podríamos rechazar o devolver todo. La issue pide filtrar.
-    if (!tipoDocumento || !['Lineamiento', 'Rubrica'].includes(tipoDocumento)) {
-        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Lineamiento" o "Rubrica".' };
+    //si no llega tipo se toma rubrica, que es el unico tipo que guarda esta tabla
+    tipoDocumento = tipoDocumento || DOC_TYPE_RUBRICA;
+    if (!TIPOS_PERMITIDOS.includes(tipoDocumento)) {
+        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Rúbrica".' };
     }
 
     const documentos = await cicloArchivoRepository.obtenerDocumentosVigentes(idCiclo, tipoDocumento);
@@ -150,7 +149,7 @@ export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
     // Colección vacía → [] (nunca null). Aplica para ambos tipos.
     if (!documentos || documentos.length === 0) {
        
-        return tipoDocumento === 'Rubrica' ? null : [];
+        return []; //coleccion vacia siempre como [] (nunca null)
     }
     
 
@@ -183,8 +182,9 @@ export const obtenerHistoriaDocumentosCiclo = async (idCiclo, titleFile, tipoDoc
         throw { status: 404, mensaje: 'Ciclo no encontrado' };
     }
 
-    if (!tipoDocumento || !['Lineamiento', 'Rubrica'].includes(tipoDocumento)) {
-        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Lineamiento" o "Rubrica".' };
+    tipoDocumento = tipoDocumento || DOC_TYPE_RUBRICA;
+    if (!TIPOS_PERMITIDOS.includes(tipoDocumento)) {
+        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Rúbrica".' };
     }
 
     if (!titleFile){

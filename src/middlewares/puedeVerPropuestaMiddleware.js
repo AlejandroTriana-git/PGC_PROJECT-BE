@@ -3,6 +3,7 @@ import {
   obtenerCicloPropuesta,
 } from '../repositories/asignacionesRepository.js';
 import { esMiembroDePropuesta } from '../repositories/propuestaRepository.js';
+import { esJuradoDelCiclo } from '../repositories/pgcRepository.js';
 
 export function puedeVerPropuesta() {
   return async (req, res, next) => {
@@ -26,7 +27,11 @@ export function puedeVerPropuesta() {
       const esEncargado = await esEncargadoDeCiclo(idCycle, req.usuario.id);
       if (esEncargado) return next();
 
-      // 3. Ni miembro ni encargado → fuera
+      // 3. ¿Es jurado del ciclo? (lo necesita para ver el pdf original cuando califica el PGC)
+      const esJurado = await esJuradoDelCiclo(req.usuario.id, idCycle);
+      if (esJurado) return next();
+
+      // 4. Ni miembro, ni encargado, ni jurado → fuera
       return res
         .status(403)
         .json({ mensaje: 'No tienes permiso para ver esta propuesta' });

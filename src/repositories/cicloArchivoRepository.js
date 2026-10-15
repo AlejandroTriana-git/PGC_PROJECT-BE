@@ -1,84 +1,83 @@
-import db from '../config/db.js';
+import db from "../config/db.js";
 
-/**
- * Busca un title_file existente en el mismo ciclo+tipo
- * comparando case-insensitive y trim. Devuelve el título canónico
- * (el que ya está guardado) o null si no existe.
- */
-export const obtenerTituloExistente = async (idCiclo, docType, titleFile) => {
-    const [rows] = await db.query(
-        `SELECT title_file
-           FROM cycle_documents
-          WHERE id_cycle = ?
-            AND doc_type = ?
-            AND LOWER(TRIM(title_file)) = LOWER(TRIM(?))
-          LIMIT 1`,
-        [idCiclo, docType, titleFile]
-    );
-    return rows.length > 0 ? rows[0].title_file : null;
-};
+// consultas de solo lectura sobre pgc / students / proposal_students para resolver membresia
 
-/**
- * Inserta un nuevo documento (lineamiento o rúbrica).
- * Acepta una conexión activa para poder participar de una transacción.
- */
-export const crearDocumento = async (
-    { idCiclo, idUsuario, docType, titleFile, descFile, versionLabel, storagePath },
-    connection
-) => {
-    const conn = connection || db;
-    await conn.query(
-        `INSERT INTO cycle_documents
-            (id_cycle, uploaded_by, doc_type, title_file, desc_file, version_label, storage_path)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [idCiclo, idUsuario, docType, titleFile, descFile, versionLabel, storagePath]
-    );
-    
-};
-
-
-
-/**
- * Devuelve una fila por cada title_file distinto del ciclo+tipo,
- * tomando siempre la versión más reciente (por uploaded_at, desempate por id).
- */
-export const obtenerDocumentosVigentes = async (idCiclo, tipoDocumento) => {
-    const [rows] = await db.query(
-        `SELECT id_cycle_document,
-                title_file,
-                desc_file,
-                version_label,
-                storage_path
-           FROM (
-                SELECT cd.*,
-                       ROW_NUMBER() OVER (
-                           PARTITION BY LOWER(TRIM(cd.title_file))
-                           ORDER BY cd.uploaded_at DESC, cd.id_cycle_document DESC
-                       ) AS rn
-                  FROM cycle_documents cd
-                 WHERE cd.id_cycle = ?
-                   AND cd.doc_type = ?
-           ) t
-          WHERE t.rn = 1
-          ORDER BY t.title_file ASC`,
-        [idCiclo, tipoDocumento]
-    );
-    return rows;
-};
-
-
-export const obtenerHistorialDocumentosCiclo = async (idCiclo, titleFile, tipoDocumento) => {
-    const [rows] = await db.query(
-        `SELECT version_label,
-            DATE_FORMAT(uploaded_at, '%Y-%m-%d %H:%i:%s') AS uploaded_at,
-            u.full_name AS uploaded_by
-        FROM cycle_documents cd
-        INNER JOIN users u ON cd.uploaded_by = u.id_user
-        WHERE id_cycle = ?
-        AND doc_type = ?
-        AND LOWER(TRIM(title_file)) = LOWER(TRIM(?))
-        ORDER BY uploaded_at DESC, id_cycle_document DESC`,
-        [idCiclo, tipoDocumento, titleFile]
-    );
-    return rows;
+//esta funcion busca el pgc por su id y trae el ciclo, la propuesta a la que pertenece y su estado
+async function buscarPgcPorId(id_pgc) {
+  const [filas] = await db.query(
+    "SELECT id_pgc, id_cycle, id_proposal, state_pgc FROM pgc WHERE id_pgc = ?",
+    [id_pgc]
+  );
+  return filas[0];
 }
+
+//esta funcion busca el id_student que tiene un usuario, si el usuario no es estudiante devuelve undefined
+async function buscarIdStudentPorUsuario(id_user) {
+  const [filas] = await db.query("SELECT id_student FROM students WHERE id_user = ?", [id_user]);
+  return filas[0]?.id_student;
+}
+
+//esta funcion revisa si el estudiante hace parte del equipo de esa propuesta (lider o integrante)
+async function esIntegranteDePropuesta(id_proposal, id_student) {
+  const [filas] = await db.query(
+    "SELECT 1 FROM proposal_students WHERE id_proposal = ? AND id_student = ?",
+    [id_proposal, id_student]
+  );
+  return filas.length > 0;
+}
+
+// lo propio de pgc_files
+//aca realizamos la insercion del archivo, title_file y desc_file son obligatorios en la tabla
+async function crear({ id_pgc, storage_path, file_format, uploaded_by, title_file, desc_file }) {
+  const [resultado] = await db.query(
+    "INSERT INTO pgc_files (id_pgc, storage_path, file_format, uploaded_by, title_file, desc_file) VALUES (?, ?, ?, ?, ?, ?)",
+    [id_pgc, storage_path, file_format, uploaded_by, title_file, desc_file]
+  );
+  return resultado.insertId;
+}
+
+//esta funcion lista todos los archivos que tiene un pgc
+async function listarPorPgc(id_pgc) {
+  const [filas] = await db.query("SELECT * FROM pgc_files WHERE id_pgc = ?", [id_pgc]);
+  return filas;
+}
+
+//esta funcion busca un archivo por su id
+async function buscarPorId(id_pgc_file) {
+  const [filas] = await db.query("SELECT * FROM pgc_files WHERE id_pgc_file = ?", [id_pgc_file]);
+  return filas[0];
+}
+
+//esta funcion actualiza el archivo cuando llega uno nuevo (cambia la ruta, el formato, el titulo y la descripcion)
+// el orden de los ? debe coincidir exacto con el orden del arreglo de valores
+async function actualizar(id_pgc_file, { storage_path, file_format, title_file, desc_file }) {
+  await db.query(
+    "UPDATE pgc_files SET storage_path = ?, file_format = ?, title_file = ?, desc_file = ? WHERE id_pgc_file = ?",
+    [storage_path, file_format, title_file, desc_file, id_pgc_file]
+  );
+}
+
+//esta funcion cambia solo el titulo y la descripcion, el archivo guardado se queda igual
+async function actualizarTextos(id_pgc_file, { title_file, desc_file }) {
+  await db.query(
+    "UPDATE pgc_files SET title_file = ?, desc_file = ? WHERE id_pgc_file = ?",
+    [title_file, desc_file, id_pgc_file]
+  );
+}
+
+//esta funcion borra el registro del archivo en la bd
+async function eliminar(id_pgc_file) {
+  await db.query("DELETE FROM pgc_files WHERE id_pgc_file = ?", [id_pgc_file]);
+}
+
+export {
+  buscarPgcPorId,
+  buscarIdStudentPorUsuario,
+  esIntegranteDePropuesta,
+  crear,
+  listarPorPgc,
+  buscarPorId,
+  actualizar,
+  actualizarTextos,
+  eliminar,
+};

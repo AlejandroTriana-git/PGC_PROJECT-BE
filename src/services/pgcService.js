@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 import * as pgcRepository from '../repositories/pgcRepository.js';
 import { buscarPropuestaPorId } from '../repositories/propuestaRepository.js';
-import { estaDentroDeLaEtapa, STAGES  } from '../validators/ciclosValidator.js';
+import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas } from '../validators/ciclosValidator.js';
 import { RESULTADOS_POR_PAGINA } from '../validators/busquedaPgcValidator.js';
 import { listarArchivosParaFicha } from './pgcArchivoService.js';
 
@@ -30,6 +30,19 @@ export const crearPgc = async (id_proposal, id_usuario) => {
         propuesta.id_cycle,
         STAGES.REGISTRO_PGC
     );
+
+    //aca si esta fuera de fecha se devuelve el rango habilitado para que el FE lo muestre
+    if (!dentroDeFecha) {
+        const fechas = await encontrarFechasEtapas(propuesta.id_cycle, STAGES.REGISTRO_PGC);
+        throw {
+            status: 400,
+            mensaje: 'Fuera del rango de fechas de registro de PGC',
+            ...(fechas && {
+                fecha_inicio_registro_pgc: fechas.fechaInicio,
+                fecha_fin_registro_pgc: fechas.fechaFin
+            })
+        };
+    }
 
     // 3. Delegar el resto al SP
     const { id_pgc, codigo, mensaje } = await pgcRepository.crearPgc(
@@ -63,6 +76,11 @@ export const obtenerPgcPorId = async (id_pgc) => {
     
     // 1. Buscar el PGC traynedo categorias y los integrantes
     const {pgc, categorias, integrantes} = await pgcRepository.buscarPgcPorId(id_pgc);
+
+    //aca si el pgc no existe se responde 404 en vez de reventar con un 500
+    if (!pgc) {
+        throw { status: 404, mensaje: 'PGC no encontrado' };
+    }
     
     //aca se traen los archivos del pgc ya con su url firmada, si no tiene queda un arreglo vacio
     const archivos = await listarArchivosParaFicha(pgc.id_pgc);
@@ -168,8 +186,8 @@ export const calificarPgc = async (id_pgc, id_juror, data) => {
         throw { status: 400, mensaje: 'La nota debe estar entre 0.0 y 5.0' };
     }
 
-    // 3. Buscar el PGC
-    const pgc = await pgcRepository.buscarPgcPorId(id_pgc);
+    // 3. Buscar el PGC (el repositorio devuelve { pgc, categorias, integrantes }, aca solo se usa pgc)
+    const { pgc } = await pgcRepository.buscarPgcPorId(id_pgc);
     if (!pgc) {
         throw { status: 404, mensaje: 'PGC no encontrado' };
     }
@@ -178,6 +196,11 @@ export const calificarPgc = async (id_pgc, id_juror, data) => {
     const esJurado = await pgcRepository.esJuradoDelCiclo(id_juror, pgc.id_cycle);
     if (!esJurado) {
         throw { status: 403, mensaje: 'No eres jurado de este ciclo' };
+    }
+
+    //aca si el pgc ya esta terminado no se deja calificar mas
+    if (pgc.state_pgc === 'Terminado') {
+        throw { status: 400, mensaje: 'Este PGC ya está terminado' };
     }
 
     // 5. Verificar ventana de "Calificación"
@@ -240,7 +263,8 @@ const verificarYMarcarTerminado = async (id_pgc, id_cycle) => {
 // ============================================
 
 export const obtenerCalificaciones = async (id_pgc, id_usuario) => {
-    const pgc = await pgcRepository.buscarPgcPorId(id_pgc);
+    //el repositorio devuelve { pgc, categorias, integrantes }, aca solo se usa pgc
+    const { pgc } = await pgcRepository.buscarPgcPorId(id_pgc);
     if (!pgc) {
         throw { status: 404, mensaje: 'PGC no encontrado' };
     }

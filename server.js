@@ -11,10 +11,11 @@ import profesoresRoutes from './src/routes/profesoresRoutes.js';
 import categoriasRoutes from './src/routes/categoriasRoutes.js';
 import pgcArchivoRoutes from "./src/routes/pgcArchivoRoutes.js";
 import pgcRoutes from './src/routes/pgcRoutes.js';
+import lineamientoRoutes from './src/routes/lineamientoRoutes.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 7000;
+const PORT = process.env.PORT || 3000; // el FE apunta a localhost:3000 (js/config.js)
 
 app.use(cors());
 app.use(express.json());
@@ -29,6 +30,7 @@ app.use('/api/profesores', profesoresRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use("/api/pgc", pgcArchivoRoutes);
 app.use('/api/pgc', pgcRoutes);
+app.use('/api/lineamientos', lineamientoRoutes);
 
 
 // Ruta de prueba

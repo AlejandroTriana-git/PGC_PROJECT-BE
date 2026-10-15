@@ -116,8 +116,9 @@ export const crearPropuesta = async (data, id_user, file) => {
             status: 400,
             mensaje: 'Fuera del rango de fechas',
             ...(fechas && {
-                fecha_inicio_radicacion: fechas.start_date,
-                fecha_fin_radicacion: fechas.end_date
+                //encontrarFechasEtapas devuelve { fechaInicio, fechaFin }, no start_date/end_date
+                fecha_inicio_radicacion: fechas.fechaInicio,
+                fecha_fin_radicacion: fechas.fechaFin
             })
         };
     }
