@@ -211,7 +211,7 @@ SELECT u.id_user, c.id_cycle FROM (
 -- ---------------------------------------------------------------------
 -- 5. Categorías
 -- ---------------------------------------------------------------------
-INSERT INTO `categories` (`name_category`) VALUES ('Web'), ('App Móvil'), ('IoT'), ('Hardware'), ('Gestión');
+INSERT INTO `categories` (`name_category`) VALUES ('Web'), ('Software'), ('Prototipo'), ('Hardware'), ('Sistema de información');
 
 -- ---------------------------------------------------------------------
 -- 6. Fechas por ciclo y etapa (relativas a hoy). Diseñadas para la demo:
@@ -289,11 +289,11 @@ SET @p4 = LAST_INSERT_ID();
 -- Equipo 5 · Fundamentación · Aprobada
 INSERT INTO `proposals` (`id_leader`, `id_cycle`, `title_proposal`, `descr_proposal`, `problem_proposal`, `justification_proposal`, `objectives_proposal`, `solution_proposal`, `pdf_storage_path`, `state_proposal`, `rejection_comment`, `resubmit_count`, `created_at`, `updated_at`, `reviewed_by`, `reviewed_at`) VALUES
   ((SELECT s.id_student FROM students s JOIN users u ON u.id_user = s.id_user WHERE u.mail_user = 'jalejandrotriana@cundinamarcau.edu.co'), @c1,
-   'Sistema de monitoreo de calidad del aire en aulas con sensores IoT',
+   'Sistema de monitoreo de calidad del aire en aulas con sensores Prototipo',
    'Prototipo con sensores de CO2 y temperatura que reporta en tiempo real la calidad del aire de las aulas y alerta cuando se superan los niveles recomendados.',
    'No existe medición de la calidad del aire en las aulas, por lo que no se detecta la mala ventilación que afecta la concentración y la salud.',
    'Medir y visualizar la calidad del aire permite actuar a tiempo sobre la ventilación y mejora las condiciones de estudio.',
-   'General: implementar un sistema IoT de monitoreo de calidad del aire. Específicos: seleccionar los sensores, construir el prototipo, transmitir los datos a un panel web y probarlo en un aula piloto.',
+   'General: implementar un sistema Prototipo de monitoreo de calidad del aire. Específicos: seleccionar los sensores, construir el prototipo, transmitir los datos a un panel web y probarlo en un aula piloto.',
    'Nodo basado en microcontrolador con sensores ambientales que envía lecturas por Wi-Fi a un servidor y las muestra en un panel con alertas.',
    'propuestas/1/14/formato-pgc-1787356839595.pdf', 'Aprobada', NULL, 0,
    DATE_ADD(NOW(), INTERVAL -47 DAY), DATE_ADD(NOW(), INTERVAL -40 DAY), @enc_c1, DATE_ADD(NOW(), INTERVAL -40 DAY));
@@ -375,23 +375,23 @@ SET @p11 = LAST_INSERT_ID();
 INSERT INTO `proposal_categories` (`id_proposal`, `id_category`)
 SELECT t.p, c.id_category FROM (
   SELECT @p1 AS p, 'Web' AS cat
-  UNION ALL SELECT @p1, 'Gestión'
+  UNION ALL SELECT @p1, 'Sistema de información'
   UNION ALL SELECT @p2, 'Web'
-  UNION ALL SELECT @p2, 'Gestión'
-  UNION ALL SELECT @p3, 'App Móvil'
-  UNION ALL SELECT @p4, 'IoT'
+  UNION ALL SELECT @p2, 'Sistema de información'
+  UNION ALL SELECT @p3, 'Software'
+  UNION ALL SELECT @p4, 'Prototipo'
   UNION ALL SELECT @p4, 'Hardware'
-  UNION ALL SELECT @p5, 'IoT'
+  UNION ALL SELECT @p5, 'Prototipo'
   UNION ALL SELECT @p5, 'Hardware'
-  UNION ALL SELECT @p6, 'IoT'
-  UNION ALL SELECT @p6, 'App Móvil'
+  UNION ALL SELECT @p6, 'Prototipo'
+  UNION ALL SELECT @p6, 'Software'
   UNION ALL SELECT @p7, 'Web'
   UNION ALL SELECT @p8, 'Hardware'
-  UNION ALL SELECT @p8, 'IoT'
-  UNION ALL SELECT @p9, 'App Móvil'
-  UNION ALL SELECT @p10, 'Gestión'
+  UNION ALL SELECT @p8, 'Prototipo'
+  UNION ALL SELECT @p9, 'Software'
+  UNION ALL SELECT @p10, 'Sistema de información'
   UNION ALL SELECT @p11, 'Web'
-  UNION ALL SELECT @p11, 'Gestión'
+  UNION ALL SELECT @p11, 'Sistema de información'
 ) t JOIN categories c ON c.name_category = t.cat;
 
 -- Integrantes de cada propuesta (incluye al líder)
