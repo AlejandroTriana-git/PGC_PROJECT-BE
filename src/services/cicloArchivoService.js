@@ -27,11 +27,20 @@ const normalizarTitleFile = (titleFile) => {
     return titleFile.trim();
 };
 
+//aca se deja la version siempre como "V" + numero (ej. V2.0), el FE ya manda la V fija pero se asegura aca tambien
 const normalizarVersionLabel = (versionLabel) => {
     if (!versionLabel || typeof versionLabel !== 'string' || versionLabel.trim() === '') {
         throw { status: 400, mensaje: 'El version_label es obligatorio' };
     }
-    return versionLabel.trim();
+    const numero = versionLabel.trim().replace(/^v\s*/i, '');
+    if (!/^\d+(\.\d+)*$/.test(numero)) {
+        throw { status: 400, mensaje: 'La versión debe ser un número, por ejemplo 1.0 o 2' };
+    }
+    const version = `V${numero}`;
+    if (version.length > 20) {
+        throw { status: 400, mensaje: 'El version_label no puede superar los 20 caracteres' };
+    }
+    return version;
 };
 
 // Sanitiza un string para usarlo como nombre de archivo en Storage
@@ -156,7 +165,14 @@ export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
     // Adjuntar URL firmada a cada uno, en paralelo
     const conUrl = await Promise.all(
         documentos.map(async (doc) => {
-            const { url, expira_en_segundos } = await generarUrlFirmada(doc.storage_path);
+            //si falla la url de un documento no se cae toda la lista, ese sale sin url (igual que lineamientos)
+            let url = null;
+            let expira_en_segundos = 0;
+            try {
+                ({ url, expira_en_segundos } = await generarUrlFirmada(doc.storage_path));
+            } catch (error) {
+                console.error('Error generando URL de rubrica', doc.id_cycle_document, error.message);
+            }
             return {
                 id_document: doc.id_cycle_document,
                 title_file: doc.title_file,

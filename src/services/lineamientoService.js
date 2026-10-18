@@ -65,7 +65,12 @@ async function crearLineamiento(datos, id_usuario, archivo) {
     if (archivo.mimetype !== 'application/pdf') throw crearError('El archivo debe ser PDF', 400);
 
     const titulo = typeof datos.title_file === 'string' ? datos.title_file.trim() : '';
-    const version = typeof datos.version_label === 'string' ? datos.version_label.trim() : '';
+    //aca la version queda siempre como "V" + numero (ej. V1.1), igual que en las rubricas
+    const numero_version = typeof datos.version_label === 'string' ? datos.version_label.trim().replace(/^v\s*/i, '') : '';
+    if (numero_version && !/^\d+(\.\d+)*$/.test(numero_version)) {
+        throw crearError('La versión debe ser un número, por ejemplo 1.0 o 2', 400);
+    }
+    const version = numero_version ? `V${numero_version}` : '';
     const descripcion = typeof datos.desc_file === 'string' && datos.desc_file.trim() !== '' ? datos.desc_file.trim() : null;
 
     if (!titulo) throw crearError('El title_file es obligatorio', 400);
