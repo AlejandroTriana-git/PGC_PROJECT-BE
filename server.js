@@ -12,6 +12,8 @@ import categoriasRoutes from './src/routes/categoriasRoutes.js';
 import pgcArchivoRoutes from "./src/routes/pgcArchivoRoutes.js";
 import pgcRoutes from './src/routes/pgcRoutes.js';
 import lineamientoRoutes from './src/routes/lineamientoRoutes.js';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swagger.js';
 dotenv.config();
 
 const app = express();
@@ -31,6 +33,8 @@ app.use('/api/categorias', categoriasRoutes);
 app.use("/api/pgc", pgcArchivoRoutes);
 app.use('/api/pgc', pgcRoutes);
 app.use('/api/lineamientos', lineamientoRoutes);
+// Ruta para ver la documentación Api Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 
 // Ruta de prueba
