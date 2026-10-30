@@ -322,10 +322,10 @@ export const esDelEquipo = async (id_proposal, id_usuario) => {
     return rows.length > 0;
 };
 
-// Listar todas las calificaciones de un PGC
-export const listarCalificacionesDelPgc = async (id_pgc) => {
+//aca se listan solo los comentarios de cada jurado (sin la nota individual, el estudiante solo ve la global)
+export const listarComentariosDelPgc = async (id_pgc) => {
     const [rows] = await db.query(
-        `SELECT jg.id_juror, u.full_name AS juror_name, jg.grade, jg.comment, jg.graded_at
+        `SELECT u.full_name AS juror_name, jg.comment, jg.graded_at
          FROM jury_grades jg
          INNER JOIN users u ON jg.id_juror = u.id_user
          WHERE jg.id_pgc = ?

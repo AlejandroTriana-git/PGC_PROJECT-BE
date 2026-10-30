@@ -272,7 +272,8 @@ export const obtenerCalificaciones = async (id_pgc, id_usuario) => {
     const esEquipo = await pgcRepository.esDelEquipo(pgc.id_proposal, id_usuario);
 
     if (esEquipo) {
-        const calificaciones = await pgcRepository.listarCalificacionesDelPgc(id_pgc);
+        //al equipo solo se le manda la nota global y los comentarios, no la nota de cada jurado
+        const calificaciones = await pgcRepository.listarComentariosDelPgc(id_pgc);
         const promedio = await pgcRepository.calcularPromedioPgc(id_pgc);
 
         return {
