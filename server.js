@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import db from './src/config/db.js';
 import authRoutes from './src/routes/authRoutes.js';
 import propuestaRoutes from './src/routes/propuestaRoutes.js';
 import estudianteRoutes from './src/routes/estudianteRoutes.js';

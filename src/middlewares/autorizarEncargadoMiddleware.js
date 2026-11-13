@@ -28,7 +28,7 @@ export function autorizarEncargadoPropuesta(){
                 return res.status(403).json({ mensaje: "No tienes permiso para esta acción" });
             }
             next();
-        } catch (error) {
+        } catch  {
             return res.status(500).json({ mensaje: "Error interno del servidor" });
         }
 }
@@ -53,7 +53,7 @@ export function autorizarEncargadoDeCiclo() {
       }
       console.log(`Usuario ${req.usuario.id} es el encargado del ciclo ${idCycle}`);
       next();
-    } catch (error) {
+    } catch {
       return res.status(500).json({ mensaje: "Error validando la autorización" });
     }
   };
