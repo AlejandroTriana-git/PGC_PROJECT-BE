@@ -1,4 +1,4 @@
-import { login as authLogin } from '../services/authService.js';
+import { login as authLogin, logout as authLogout } from '../services/authService.js';
 import validarLogin from '../validators/loginValidator.js';
 
 const login = async (req, res) => {
@@ -20,4 +20,17 @@ const login = async (req, res) => {
     }
 };
 
-export { login };
+//POST /api/auth/logout
+//aca se cierra la sesion, el token que llega en el header queda invalidado
+const logout = async (req, res) => {
+    try {
+        const token = req.headers.authorization.split(' ')[1];
+        const result = await authLogout(req.usuario, token);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('ERROR LOGOUT:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor' });
+    }
+};
+
+export { login, logout };

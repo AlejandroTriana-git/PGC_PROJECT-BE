@@ -1,12 +1,10 @@
 import db from '../config/db.js';
 
-/**
- * Busca un title_file existente en el mismo ciclo+tipo
- * comparando case-insensitive y trim. Devuelve el título canónico
- * (el que ya está guardado) o null si no existe.
- */
+
+//esta funcion busca si ya existe un titulo igual en ese ciclo y tipo (sin importar mayusculas ni espacios)
+//y devuelve el titulo guardado, asi las versiones nuevas quedan amarradas al mismo documento
 export const obtenerTituloExistente = async (idCiclo, docType, titleFile) => {
-    const [rows] = await db.query(
+    const [filas] = await db.query(
         `SELECT title_file
            FROM cycle_documents
           WHERE id_cycle = ?
@@ -15,40 +13,26 @@ export const obtenerTituloExistente = async (idCiclo, docType, titleFile) => {
           LIMIT 1`,
         [idCiclo, docType, titleFile]
     );
-    return rows.length > 0 ? rows[0].title_file : null;
+    return filas.length > 0 ? filas[0].title_file : null;
 };
 
-/**
- * Inserta un nuevo documento (lineamiento o rúbrica).
- * Acepta una conexión activa para poder participar de una transacción.
- */
+//aca se inserta la nueva version del documento, recibe la conexion porque el service la usa dentro de una transaccion
 export const crearDocumento = async (
     { idCiclo, idUsuario, docType, titleFile, descFile, versionLabel, storagePath },
-    connection
+    connection = db
 ) => {
-    const conn = connection || db;
-    await conn.query(
-        `INSERT INTO cycle_documents
-            (id_cycle, uploaded_by, doc_type, title_file, desc_file, version_label, storage_path)
+    const [resultado] = await connection.query(
+        `INSERT INTO cycle_documents (id_cycle, storage_path, doc_type, version_label, uploaded_by, title_file, desc_file)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [idCiclo, idUsuario, docType, titleFile, descFile, versionLabel, storagePath]
+        [idCiclo, storagePath, docType, versionLabel, idUsuario, titleFile, descFile]
     );
-    
+    return resultado.insertId;
 };
 
-
-
-/**
- * Devuelve una fila por cada title_file distinto del ciclo+tipo,
- * tomando siempre la versión más reciente (por uploaded_at, desempate por id).
- */
-export const obtenerDocumentosVigentes = async (idCiclo, tipoDocumento) => {
-    const [rows] = await db.query(
-        `SELECT id_cycle_document,
-                title_file,
-                desc_file,
-                version_label,
-                storage_path
+//esta funcion trae una fila por cada titulo del ciclo, siempre la version mas reciente
+export const obtenerDocumentosVigentes = async (idCiclo, docType) => {
+    const [filas] = await db.query(
+        `SELECT id_cycle_document, title_file, desc_file, version_label, storage_path
            FROM (
                 SELECT cd.*,
                        ROW_NUMBER() OVER (
@@ -61,24 +45,24 @@ export const obtenerDocumentosVigentes = async (idCiclo, tipoDocumento) => {
            ) t
           WHERE t.rn = 1
           ORDER BY t.title_file ASC`,
-        [idCiclo, tipoDocumento]
+        [idCiclo, docType]
     );
-    return rows;
+    return filas;
 };
 
-
-export const obtenerHistorialDocumentosCiclo = async (idCiclo, titleFile, tipoDocumento) => {
-    const [rows] = await db.query(
-        `SELECT version_label,
-            DATE_FORMAT(uploaded_at, '%Y-%m-%d %H:%i:%s') AS uploaded_at,
-            u.full_name AS uploaded_by
-        FROM cycle_documents cd
-        INNER JOIN users u ON cd.uploaded_by = u.id_user
-        WHERE id_cycle = ?
-        AND doc_type = ?
-        AND LOWER(TRIM(title_file)) = LOWER(TRIM(?))
-        ORDER BY uploaded_at DESC, id_cycle_document DESC`,
-        [idCiclo, tipoDocumento, titleFile]
+//esta funcion trae todas las versiones de un titulo del ciclo (solo metadata, sin url), igual que lineamientos
+export const obtenerHistorialDocumentosCiclo = async (idCiclo, titleFile, docType) => {
+    const [filas] = await db.query(
+        `SELECT cd.version_label,
+                DATE_FORMAT(cd.uploaded_at, '%Y-%m-%d %H:%i:%s') AS uploaded_at,
+                u.full_name AS uploaded_by
+           FROM cycle_documents cd
+          INNER JOIN users u ON cd.uploaded_by = u.id_user
+          WHERE cd.id_cycle = ?
+            AND cd.doc_type = ?
+            AND LOWER(TRIM(cd.title_file)) = LOWER(TRIM(?))
+          ORDER BY cd.uploaded_at DESC, cd.id_cycle_document DESC`,
+        [idCiclo, docType, titleFile]
     );
-    return rows;
-}
+    return filas;
+};

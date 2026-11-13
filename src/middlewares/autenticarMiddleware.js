@@ -1,32 +1,36 @@
-const jwt = require("jsonwebtoken");
+// aca verificamos quien es el usuario para asi poder ingresar gracias a los tokens
 
-function verificarToken(req, res, next) {
+import jwt from "jsonwebtoken";
+import { tokenEnListaNegra } from "../repositories/authRepository.js";
+
+// con esta funcion se verifica que halla un token valido para el ingreso y si no da el error 401 respectivamente
+async function verificarToken(req, res, next) {
   const authHeader = req.headers.authorization;
-
-  // 1. Verificar formato "Bearer <token>"
+// aca se revisa que el header existe y que tenga un formato valido sino 401
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ mensaje: "Token no proporcionado o formato inválido" });
+    return res.status(401).json({ mensaje: "Token no proporcionado" });
   }
 
-  // 2. Extraer el token y asegurar que no venga vacío
-  const token = authHeader.split(" ")[1]?.trim();
-  if (!token) {
-    return res.status(401).json({ mensaje: "Token vacío" });
-  }
-
-  // 3. Asegurar que la clave secreta esté configurada
-  if (!process.env.JWT_SECRET) {
-    console.error("Falta configurar JWT_SECRET en las variables de entorno");
-    return res.status(500).json({ mensaje: "Error interno de configuración" });
-  }
-
-  // 4. Verificar la firma y expiración del token
+  const token = authHeader.split(" ")[1];
+// esto es para que no se caiga la app y verifica si la "firma" es igual a la original
+  let payload;
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = payload; // { id, mail_user, rol }
-    return next();
-  } catch {
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+  } catch{
     return res.status(401).json({ mensaje: "Token inválido o expirado" });
-  }}
+  }
 
-module.exports = verificarToken;
+// aca se revisa que el token no se haya cerrado antes con el logout
+  try {
+    if (await tokenEnListaNegra(token)) {
+      return res.status(401).json({ mensaje: "La sesión fue cerrada, inicia sesión nuevamente" });
+    }
+  } catch{
+    return res.status(500).json({ mensaje: "Error interno del servidor" });
+  }
+
+  req.usuario = payload; // { id, correo, rol, ... }
+  next();
+}
+
+export default verificarToken;
