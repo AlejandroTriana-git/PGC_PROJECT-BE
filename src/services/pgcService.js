@@ -1,4 +1,3 @@
-import db from '../config/db.js';
 import * as pgcRepository from '../repositories/pgcRepository.js';
 import { buscarPropuestaPorId } from '../repositories/propuestaRepository.js';
 import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas } from '../validators/ciclosValidator.js';

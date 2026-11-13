@@ -21,7 +21,7 @@ async function verificarTokenOpcional(req, res, next) {
     if (!(await tokenEnListaNegra(token))) {
       req.usuario = payload;
     }
-  } catch (error) {
+  } catch{
     // token invalido o vencido: se ignora y se sigue como visitante
   }
   next();

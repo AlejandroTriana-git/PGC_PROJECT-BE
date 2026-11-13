@@ -16,7 +16,7 @@ async function verificarToken(req, res, next) {
   let payload;
   try {
     payload = jwt.verify(token, process.env.JWT_SECRET);
-  } catch (error) {
+  } catch{
     return res.status(401).json({ mensaje: "Token inválido o expirado" });
   }
 
@@ -25,8 +25,7 @@ async function verificarToken(req, res, next) {
     if (await tokenEnListaNegra(token)) {
       return res.status(401).json({ mensaje: "La sesión fue cerrada, inicia sesión nuevamente" });
     }
-  } catch (error) {
-    console.error("ERROR REVISANDO LISTA NEGRA:", error);
+  } catch{
     return res.status(500).json({ mensaje: "Error interno del servidor" });
   }
 
