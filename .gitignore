@@ -22,3 +22,6 @@ build/
 
 # Archivo de firebase
 src/config/service-account.json
+
+# Tests
+coverage/
