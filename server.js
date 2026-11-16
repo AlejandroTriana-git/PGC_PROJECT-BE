@@ -15,8 +15,14 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000; // el FE apunta a localhost:3000 (js/config.js)
+const corsOptions = {
+    origin: 'https://pgc-jp3344wt6-alejo-a282.vercel.app', // Permitir solicitudes unicamente desde este origen
+    methods: 'GET,PUT,PATCH,POST,DELETE', // Métodos HTTP permitidos
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Usar rutas
