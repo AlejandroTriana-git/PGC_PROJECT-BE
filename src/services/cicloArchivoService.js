@@ -4,9 +4,10 @@ import  bucket  from '../config/firebaseConfig.js';
 import * as cicloRepository from '../repositories/ciclosRepository.js' ;
 
 
-// Constantes para los tipos de documentos
-const DOC_TYPE_LINEAMIENTO = 'Lineamiento';
-const DOC_TYPE_RUBRICA = 'Rubrica';
+// Constante para el tipo de documento, tiene que ser igual al ENUM de cycle_documents.doc_type (con tilde)
+// los lineamientos ya no van aca, ahora estan en guideline_documents (ver lineamientoService.js)
+const DOC_TYPE_RUBRICA = 'Rúbrica';
+const TIPOS_PERMITIDOS = [DOC_TYPE_RUBRICA];
 
 // ---------- Helpers ----------
 
@@ -26,11 +27,20 @@ const normalizarTitleFile = (titleFile) => {
     return titleFile.trim();
 };
 
+//aca se deja la version siempre como "V" + numero (ej. V2.0), el FE ya manda la V fija pero se asegura aca tambien
 const normalizarVersionLabel = (versionLabel) => {
     if (!versionLabel || typeof versionLabel !== 'string' || versionLabel.trim() === '') {
         throw { status: 400, mensaje: 'El version_label es obligatorio' };
     }
-    return versionLabel.trim();
+    const numero = versionLabel.trim().replace(/^v\s*/i, '');
+    if (!/^\d+(\.\d+)*$/.test(numero)) {
+        throw { status: 400, mensaje: 'La versión debe ser un número, por ejemplo 1.0 o 2' };
+    }
+    const version = `V${numero}`;
+    if (version.length > 20) {
+        throw { status: 400, mensaje: 'El version_label no puede superar los 20 caracteres' };
+    }
+    return version;
 };
 
 // Sanitiza un string para usarlo como nombre de archivo en Storage
@@ -125,9 +135,6 @@ const crearDocumento = async (docType, datos, idUsuario, idCiclo, archivo) => {
 
 
 // --- Wrappers por caso de uso ---
-export const crearLineamiento = (datos, idUsuario, idCiclo, archivo) =>
-    crearDocumento(DOC_TYPE_LINEAMIENTO, datos, idUsuario, idCiclo, archivo);
-
 export const crearRubrica = (datos, idUsuario, idCiclo, archivo) =>
     crearDocumento(DOC_TYPE_RUBRICA, datos, idUsuario, idCiclo, archivo);
 
@@ -140,9 +147,10 @@ export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
     if (!ciclo) {
         throw { status: 404, mensaje: 'Ciclo no encontrado' };
     }
-    // Si no llega tipo, podríamos rechazar o devolver todo. La issue pide filtrar.
-    if (!tipoDocumento || !['Lineamiento', 'Rubrica'].includes(tipoDocumento)) {
-        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Lineamiento" o "Rubrica".' };
+    //si no llega tipo se toma rubrica, que es el unico tipo que guarda esta tabla
+    tipoDocumento = tipoDocumento || DOC_TYPE_RUBRICA;
+    if (!TIPOS_PERMITIDOS.includes(tipoDocumento)) {
+        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Rúbrica".' };
     }
 
     const documentos = await cicloArchivoRepository.obtenerDocumentosVigentes(idCiclo, tipoDocumento);
@@ -150,14 +158,21 @@ export const obtenerDocumentosCiclo = async (idCiclo, tipoDocumento) => {
     // Colección vacía → [] (nunca null). Aplica para ambos tipos.
     if (!documentos || documentos.length === 0) {
        
-        return tipoDocumento === 'Rubrica' ? null : [];
+        return []; //coleccion vacia siempre como [] (nunca null)
     }
     
 
     // Adjuntar URL firmada a cada uno, en paralelo
     const conUrl = await Promise.all(
         documentos.map(async (doc) => {
-            const { url, expira_en_segundos } = await generarUrlFirmada(doc.storage_path);
+            //si falla la url de un documento no se cae toda la lista, ese sale sin url (igual que lineamientos)
+            let url = null;
+            let expira_en_segundos = 0;
+            try {
+                ({ url, expira_en_segundos } = await generarUrlFirmada(doc.storage_path));
+            } catch (error) {
+                console.error('Error generando URL de rubrica', doc.id_cycle_document, error.message);
+            }
             return {
                 id_document: doc.id_cycle_document,
                 title_file: doc.title_file,
@@ -183,8 +198,9 @@ export const obtenerHistoriaDocumentosCiclo = async (idCiclo, titleFile, tipoDoc
         throw { status: 404, mensaje: 'Ciclo no encontrado' };
     }
 
-    if (!tipoDocumento || !['Lineamiento', 'Rubrica'].includes(tipoDocumento)) {
-        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Lineamiento" o "Rubrica".' };
+    tipoDocumento = tipoDocumento || DOC_TYPE_RUBRICA;
+    if (!TIPOS_PERMITIDOS.includes(tipoDocumento)) {
+        throw { status: 400, mensaje: 'El parámetro "tipo" debe ser "Rúbrica".' };
     }
 
     if (!titleFile){

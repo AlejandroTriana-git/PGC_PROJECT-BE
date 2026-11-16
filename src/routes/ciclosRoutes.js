@@ -1,5 +1,6 @@
 import { Router } from "express";
 import verificarToken from "../middlewares/autenticarMiddleware.js";
+import verificarTokenOpcional from "../middlewares/autenticarOpcionalMiddleware.js";
 import autorizarRoles from "../middlewares/rolMiddleware.js";
 import * as cyclesController from "../controllers/ciclosController.js";
 import { autorizarEncargadoDeCiclo } from "../middlewares/autorizarEncargadoMiddleware.js";
@@ -12,7 +13,8 @@ router.get("/profesores", verificarToken, cyclesController.listarProfesores);
 // aca se llama a los middlewares para los roles
 router.post("/", verificarToken, autorizarRoles("Administrador"), cyclesController.crear);
 router.put("/:id", verificarToken, autorizarRoles("Administrador"), cyclesController.editar);
-router.get("/", verificarToken, cyclesController.listar);
+//la lista de ciclos es publica porque el buscador de PGC la usa para el filtro de ciclo (sin sesion tambien)
+router.get("/", verificarTokenOpcional, cyclesController.listar);
 router.post("/:id/jurados", verificarToken, autorizarRoles("Administrador"), cyclesController.asignarJurados);
 router.delete("/:id/jurados/:id_jurado", verificarToken, autorizarRoles("Administrador"), cyclesController.quitarJurado);
 router.get("/:id/jurados", verificarToken, cyclesController.listarJurados);

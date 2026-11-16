@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import {encontrarPorEmail}  from '../repositories/authRepository.js';
+import {encontrarPorEmail, agregarTokenListaNegra}  from '../repositories/authRepository.js';
 import {encontrarAsignacionesPorId} from '../repositories/asignacionesRepository.js';
 dotenv.config();
 
@@ -48,4 +48,12 @@ export const login = async (data) => {
         jurado_de: jurado_de,
         mensaje: 'Inicio de sesión exitoso'
     };
+};
+
+//esta funcion invalida el token mandandolo a la lista negra hasta que se venza
+export const logout = async (usuario, token) => {
+    //el exp del jwt viene en segundos, si no viene se deja 1 dia por defecto
+    const expires_at = usuario.exp ? new Date(usuario.exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await agregarTokenListaNegra(usuario.id, token, expires_at);
+    return { mensaje: 'Sesión cerrada correctamente' };
 };

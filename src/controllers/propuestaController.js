@@ -10,8 +10,13 @@ const crearPropuesta = async (req, res) => {
         res.status(201).json(result);
     } catch (error) {
         console.error('ERROR CREAR PROPUESTA:', error);
+        //aca se mandan tambien las fechas de radicacion si la propuesta llego fuera de fecha
         res.status(error.status || 500).json({
-            mensaje: error.mensaje || 'Error interno del servidor'
+            mensaje: error.mensaje || 'Error interno del servidor',
+            ...(error.fecha_inicio_radicacion && {
+                fecha_inicio_radicacion: error.fecha_inicio_radicacion,
+                fecha_fin_radicacion: error.fecha_fin_radicacion
+            })
         });
     }
 };
