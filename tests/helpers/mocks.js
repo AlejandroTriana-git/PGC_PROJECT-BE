@@ -1,53 +1,68 @@
 import { jest } from '@jest/globals';
 
-// 1. Una función middleware genérica que solo pasa a la siguiente
-const fakeMiddleware = (req, res, next) => {
+export const mockAuth = (req, res, next) => {
   if (typeof next === 'function') next();
 };
 
-// 2. Una fábrica para autorizarRoles('Estudiante')
-const fakeFactory = () => fakeMiddleware;
+const mockMiddlewareFactory = () => mockAuth;
 
-// 3. Middlewares de Autenticación
+const mockMulterFunction = (req, res, next) => {
+  if (typeof next === 'function') next();
+};
+
+// Mock de la conexión a base de datos (con transacciones)
+export const mockConnection = {
+  query: jest.fn(),
+  execute: jest.fn(),
+  beginTransaction: jest.fn(),
+  commit: jest.fn(),
+  rollback: jest.fn(),
+  release: jest.fn(),
+};
+
+export const mockDb = {
+  query: jest.fn(),
+  execute: jest.fn(),
+  getConnection: jest.fn().mockResolvedValue(mockConnection),
+};
+
+jest.unstable_mockModule('../../src/config/db.js', () => ({ default: mockDb }));
+
 jest.unstable_mockModule('../../src/middlewares/autenticarMiddleware.js', () => ({
-  verificarToken: fakeMiddleware,
-  autenticar: fakeMiddleware,
-  default: fakeMiddleware,
+  verificarToken: mockAuth,
+  autenticar: mockAuth,
+  default: mockAuth,
 }));
 
-// 4. Middlewares de Roles
 jest.unstable_mockModule('../../src/middlewares/rolMiddleware.js', () => ({
-  autorizarRoles: fakeFactory,
-  autorizarRol: fakeFactory,
-  verificarRol: fakeFactory,
-  default: fakeMiddleware,
+  autorizarRoles: mockMiddlewareFactory,
+  autorizarRol: mockMiddlewareFactory,
+  verificarRol: mockMiddlewareFactory,
+  default: mockAuth,
 }));
 
-// 5. Middlewares de Encargado
 jest.unstable_mockModule('../../src/middlewares/autorizarEncargadoMiddleware.js', () => ({
-  autorizarEncargadoDeCiclo: fakeFactory,
-  autorizarEncargadoPropuesta: fakeFactory,
-  default: fakeMiddleware,
+  autorizarEncargadoDeCiclo: mockMiddlewareFactory,
+  autorizarEncargadoPropuesta: mockMiddlewareFactory,
+  default: mockAuth,
 }));
 
-// 6. Middlewares de Subida de Archivos (AQUÍ ESTABA EL ERROR)
-// Aseguramos que subirPdfPropuesta sea una función pura, NO un objeto
-jest.unstable_mockModule('../../src/middlewares/uploadMiddleware.js', () => ({
-  subirPdfPropuesta: fakeMiddleware,
-  subirArchivoPgc: fakeMiddleware,
-  subirArchivoCiclo: fakeMiddleware,
-  subirPdfDocumento: fakeMiddleware,
-  default: fakeMiddleware,
-}));
-
-// 7. Otros middlewares
 jest.unstable_mockModule('../../src/middlewares/puedeVerPropuestaMiddleware.js', () => ({
-  puedeVerPropuesta: fakeMiddleware,
-  default: fakeMiddleware,
+  puedeVerPropuesta: mockAuth,
+  default: mockAuth,
 }));
 
 jest.unstable_mockModule('../../src/middlewares/pertenecenciaCiclomiddleware.js', () => ({
-  perteneceAlCiclo: fakeMiddleware,
-  verificarPertenenciaCiclo: fakeMiddleware,
-  default: fakeMiddleware,
+  perteneceAlCiclo: mockAuth,
+  verificarPertenenciaCiclo: mockAuth,
+  default: mockAuth,
+}));
+
+jest.unstable_mockModule('../../src/middlewares/uploadMiddleware.js', () => ({
+  subirPdfPropuesta: mockMulterFunction,
+  subirArchivoPgc: mockMulterFunction,
+  subirArchivoCiclo: mockMulterFunction,
+  subirPdfDocumento: mockMulterFunction,
+  upload: mockMulterFunction,
+  default: mockMulterFunction,
 }));

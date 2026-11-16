@@ -1,56 +1,108 @@
 import { jest } from '@jest/globals';
-import * as autenticarMiddleware from '../src/middlewares/autenticarMiddleware.js';
-import * as rolMiddleware from '../src/middlewares/rolMiddleware.js';
-import * as autorizarEncargadoMiddleware from '../src/middlewares/autorizarEncargadoMiddleware.js';
-import * as puedeVerPropuestaMiddleware from '../src/middlewares/puedeVerPropuestaMiddleware.js';
 
-const mockRes = () => {
-  const res = {};
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
-  return res;
-};
+// 1. Mockeamos SOLO las dependencias de los middlewares
+const mockCicloRepo = { usuarioPerteneceAlCiclo: jest.fn() };
+jest.unstable_mockModule('../src/repositories/ciclosRepository.js', () => mockCicloRepo);
 
-describe('middlewares', () => {
-  describe('autenticarMiddleware', () => {
-    const fn = autenticarMiddleware.autenticar || autenticarMiddleware.default;
+const mockAsigRepo = { esEncargadoDeCiclo: jest.fn(), obtenerCicloPropuesta: jest.fn() };
+jest.unstable_mockModule('../src/repositories/asignacionesRepository.js', () => mockAsigRepo);
 
-    test('rechaza sin token', () => {
-      const req = { headers: {} };
-      const res = mockRes();
-      const next = jest.fn();
-      if (typeof fn === 'function') {
-        fn(req, res, next);
-        // Si no hay token debe responder 401 o llamar next(error)
-        expect(res.status.mock.calls.length + next.mock.calls.length).toBeGreaterThan(0);
-      }
+const mockPropRepo = { esMiembroDePropuesta: jest.fn() };
+jest.unstable_mockModule('../src/repositories/propuestaRepository.js', () => mockPropRepo);
+
+const mockPgcRepo = { esJuradoDelCiclo: jest.fn() };
+jest.unstable_mockModule('../src/repositories/pgcRepository.js', () => mockPgcRepo);
+
+// 2. Importamos los middlewares REALES
+const { perteneceAlCiclo } = await import('../src/middlewares/pertenecenciaCiclomiddleware.js');
+const { puedeVerPropuesta } = await import('../src/middlewares/puedeVerPropuestaMiddleware.js');
+
+describe('Middlewares Nuevos', () => {
+  let req, res, next;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    req = { usuario: { id: 1, rol: 'Estudiante' }, params: { id: 1, idProposal: 1 } };
+    res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    next = jest.fn();
+  });
+
+  describe('perteneceAlCiclo', () => {
+    test('401 si no hay usuario', async () => {
+      req.usuario = null;
+      await perteneceAlCiclo(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    test('next si es Admin', async () => {
+      req.usuario.rol = 'Administrador';
+      await perteneceAlCiclo(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('403 si no pertenece', async () => {
+      mockCicloRepo.usuarioPerteneceAlCiclo.mockResolvedValue(false);
+      await perteneceAlCiclo(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    test('next si pertenece', async () => {
+      mockCicloRepo.usuarioPerteneceAlCiclo.mockResolvedValue(true);
+      await perteneceAlCiclo(req, res, next);
+      expect(next).toHaveBeenCalled();
     });
   });
 
-  describe('rolMiddleware', () => {
-    const fn = rolMiddleware.autorizarRol || rolMiddleware.verificarRol || rolMiddleware.default;
-
-    test('rechaza si no hay rol en req.user', () => {
-      const req = { user: {} };
-      const res = mockRes();
-      const next = jest.fn();
-      if (typeof fn === 'function') {
-        const middleware = fn(['admin']);
-        middleware(req, res, next);
-        expect(res.status.mock.calls.length + next.mock.calls.length).toBeGreaterThan(0);
-      }
+  describe('puedeVerPropuesta', () => {
+    test('401 si no hay usuario', async () => {
+      req.usuario = null;
+      const mw = puedeVerPropuesta();
+      await mw(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(401);
     });
-  });
 
-  describe('autorizarEncargadoMiddleware', () => {
-    test('el módulo se importa correctamente', () => {
-      expect(autorizarEncargadoMiddleware).toBeDefined();
+    test('next si es miembro', async () => {
+      mockPropRepo.esMiembroDePropuesta.mockResolvedValue(true);
+      const mw = puedeVerPropuesta();
+      await mw(req, res, next);
+      expect(next).toHaveBeenCalled();
     });
-  });
 
-  describe('puedeVerPropuestaMiddleware', () => {
-    test('el módulo se importa correctamente', () => {
-      expect(puedeVerPropuestaMiddleware).toBeDefined();
+    test('404 si propuesta no existe', async () => {
+      mockPropRepo.esMiembroDePropuesta.mockResolvedValue(false);
+      mockAsigRepo.obtenerCicloPropuesta.mockResolvedValue(null);
+      const mw = puedeVerPropuesta();
+      await mw(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    test('next si es encargado', async () => {
+      mockPropRepo.esMiembroDePropuesta.mockResolvedValue(false);
+      mockAsigRepo.obtenerCicloPropuesta.mockResolvedValue(1);
+      mockAsigRepo.esEncargadoDeCiclo.mockResolvedValue(true);
+      const mw = puedeVerPropuesta();
+      await mw(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('next si es jurado', async () => {
+      mockPropRepo.esMiembroDePropuesta.mockResolvedValue(false);
+      mockAsigRepo.obtenerCicloPropuesta.mockResolvedValue(1);
+      mockAsigRepo.esEncargadoDeCiclo.mockResolvedValue(false);
+      mockPgcRepo.esJuradoDelCiclo.mockResolvedValue(true);
+      const mw = puedeVerPropuesta();
+      await mw(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+
+    test('403 si no es nadie', async () => {
+      mockPropRepo.esMiembroDePropuesta.mockResolvedValue(false);
+      mockAsigRepo.obtenerCicloPropuesta.mockResolvedValue(1);
+      mockAsigRepo.esEncargadoDeCiclo.mockResolvedValue(false);
+      mockPgcRepo.esJuradoDelCiclo.mockResolvedValue(false);
+      const mw = puedeVerPropuesta();
+      await mw(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
     });
   });
 });
