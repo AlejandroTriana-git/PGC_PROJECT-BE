@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import * as archivoPgcValidator from '../src/validators/archivoPgcValidator.js';
 import * as busquedaPgcValidator from '../src/validators/busquedaPgcValidator.js';
 import * as ciclosValidator from '../src/validators/ciclosValidator.js';
