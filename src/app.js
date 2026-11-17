@@ -17,7 +17,7 @@ import lineamientoRoutes from './routes/lineamientoRoutes.js'; // <-- Ruta nueva
 dotenv.config();
 
 const app = express();
-
+app.disable('x-powered-by');
 // CORS configurado por tu compañero
 const corsOptions = {
     origin: 'https://pgcfe.vercel.app', // Permitir solicitudes unicamente desde este origen
