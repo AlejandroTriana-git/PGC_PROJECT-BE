@@ -1,48 +1,9 @@
-import express from 'express';
-import cors from 'cors';
+import app from './src/app.js';
 import dotenv from 'dotenv';
-import authRoutes from './src/routes/authRoutes.js';
-import propuestaRoutes from './src/routes/propuestaRoutes.js';
-import estudianteRoutes from './src/routes/estudianteRoutes.js';
-import ciclosRoutes from './src/routes/ciclosRoutes.js';
-import cicloArchivoRoutes from './src/routes/cicloArchivoRoutes.js';
-import profesoresRoutes from './src/routes/profesoresRoutes.js';
-import categoriasRoutes from './src/routes/categoriasRoutes.js';
-import pgcArchivoRoutes from "./src/routes/pgcArchivoRoutes.js";
-import pgcRoutes from './src/routes/pgcRoutes.js';
-import lineamientoRoutes from './src/routes/lineamientoRoutes.js';
+
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 3000; // el FE apunta a localhost:3000 (js/config.js)
-const corsOptions = {
-    origin: 'https://pgcfe.vercel.app', // Permitir solicitudes unicamente desde este origen
-    methods: 'GET,PUT,PATCH,POST,DELETE', // Métodos HTTP permitidos
-    preflightContinue: false,
-    optionsSuccessStatus: 204
-};
-
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Usar rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/propuestas', propuestaRoutes);
-app.use('/api/estudiantes', estudianteRoutes);
-app.use('/api/ciclos', ciclosRoutes);
-app.use('/api/ciclos', cicloArchivoRoutes);
-app.use('/api/profesores', profesoresRoutes);
-app.use('/api/categorias', categoriasRoutes);
-app.use("/api/pgc", pgcArchivoRoutes);
-app.use('/api/pgc', pgcRoutes);
-app.use('/api/lineamientos', lineamientoRoutes);
-
-
-// Ruta de prueba
-app.get('/', (req, res) => {
-    res.send('API funcionando correctamente');
-});
-
+const PORT = process.env.PORT || 3000; // El FE apunta a localhost:3000
 
 app.listen(PORT, () => {
     console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);

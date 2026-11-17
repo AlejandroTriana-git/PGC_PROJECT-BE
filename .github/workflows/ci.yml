@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SonarCloud necesita el historial completo
 
       - uses: actions/setup-node@v4
         with:
@@ -35,5 +37,10 @@ jobs:
       - name: Verificar sintaxis de todos los archivos
         run: find . -name "*.js" -not -path "./node_modules/*" -print0 | xargs -0 -n1 node --check
 
-      - name: Pruebas unitarias
-        run: npm test --if-present
+      - name: Pruebas unitarias (genera coverage/lcov.info)
+        run: npm test
+
+      - name: Análisis SonarCloud
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKN }}
