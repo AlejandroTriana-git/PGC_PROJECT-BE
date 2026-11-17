@@ -1,34 +1,15 @@
-// Entorno de prueba sin MySQL ni Firebase. Los imports de src/ son dinámicos (await import)
-// para que se carguen DESPUÉS de que el helper reemplace db.js y firebaseConfig.js.
+// Entorno de prueba sin MySQL ni Firebase (debe importarse antes que cualquier cosa de src/)
 import './helpers/entornoDePrueba.js';
-import { usuariosPrueba } from './helpers/dbFalsa.js';
 import request from 'supertest';
-import express from 'express';
-const { default: propuestaRoutes } = await import('../src/routes/propuestaRoutes.js');
-const { default: authRoutes } = await import('../src/routes/authRoutes.js');
+import { crearApp, entrarComo } from './helpers/appDePrueba.js';
 
-const app = express();
-app.use(express.json());
-app.use('/api/auth', authRoutes);
-app.use('/api/propuestas', propuestaRoutes);
-
-let tokenEstudiante = '';
-let tokenEncargado = '';
+const app = await crearApp('propuestas');
+let estudiante;
+let encargado;
 
 beforeAll(async () => {
-    // Login del Estudiante
-    const loginEst = await request(app).post('/api/auth/login').send({
-        correo: usuariosPrueba.estudiante.correo,
-        contrasena: usuariosPrueba.estudiante.contrasena
-    });
-    tokenEstudiante = loginEst.body.token;
-
-    // Login del Encargado de Ciclo
-    const loginEnc = await request(app).post('/api/auth/login').send({
-        correo: usuariosPrueba.profesor.correo,
-        contrasena: usuariosPrueba.profesor.contrasena
-    });
-    tokenEncargado = loginEnc.body.token;
+    estudiante = await entrarComo(app, 'estudiante');
+    encargado = await entrarComo(app, 'profesor');
 });
 
 describe('Pruebas - Propuestas', () => {
@@ -38,24 +19,18 @@ describe('Pruebas - Propuestas', () => {
     });
 
     test('Debería listar propuestas del ciclo como Encargado (200)', async () => {
-        const res = await request(app)
-            .get('/api/propuestas?cycle=1')
-            .set('Authorization', `Bearer ${tokenEncargado}`);
+        const res = await encargado.get('/api/propuestas?cycle=1');
         expect(res.statusCode).toBe(200);
         expect(Array.isArray(res.body)).toBeTruthy();
     });
 
     test('Debería ver mi propuesta como Estudiante (200)', async () => {
-        const res = await request(app)
-            .get('/api/propuestas/mia')
-            .set('Authorization', `Bearer ${tokenEstudiante}`);
+        const res = await estudiante.get('/api/propuestas/mia');
         expect(res.statusCode).toBe(200);
     });
 
     test('Debería listar propuestas aprobadas sin PGC (200)', async () => {
-        const res = await request(app)
-            .get('/api/propuestas/aprobadas-sin-pgc')
-            .set('Authorization', `Bearer ${tokenEstudiante}`);
+        const res = await estudiante.get('/api/propuestas/aprobadas-sin-pgc');
         expect(res.statusCode).toBe(200);
         expect(Array.isArray(res.body)).toBeTruthy();
     });
