@@ -85,6 +85,13 @@ async function verificarVentanaRegistro(id_cycle) {
   if (!dentro_ventana) throw crearError("Fuera de la ventana de registro de PGC", 400);
 }
 
+//esta funcion revisa que el pgc no este terminado, si ya lo esta no se deja subir, cambiar ni borrar nada
+function verificarNoTerminado(pgc) {
+  if (pgc.state_pgc === "Terminado") {
+    throw crearError("El PGC ya está terminado, no se pueden subir ni modificar archivos", 400);
+  }
+}
+
 // mapeo de salida (regla de Alejandro): el FE nunca ve storage_path, id_pgc_file ni uploaded_by
 async function mapearArchivoParaFrontend(fila) {
   return {
@@ -99,6 +106,7 @@ async function mapearArchivoParaFrontend(fila) {
 async function subirArchivo(id_pgc, id_user, archivo, datos) {
   //aca se revisa que sea del equipo y que este dentro de la ventana de fechas
   const { pgc, id_student } = await verificarPertenencia(id_pgc, id_user);
+  verificarNoTerminado(pgc);
   await verificarVentanaRegistro(pgc.id_cycle);
 
   //primero se sube a firebase y despues se guarda en la bd
@@ -158,6 +166,7 @@ async function listarArchivosParaFicha(id_pgc) {
 async function reemplazarArchivo(id_pgc, id_pgc_file, id_user, archivo, datos) {
   //aca se revisa que sea del equipo y que este dentro de la ventana de fechas
   const { pgc, id_student } = await verificarPertenencia(id_pgc, id_user);
+  verificarNoTerminado(pgc);
   await verificarVentanaRegistro(pgc.id_cycle);
 
   //el archivo tiene que existir y ser de ese pgc, si no, no se deja editar el de otro equipo
@@ -195,13 +204,14 @@ async function reemplazarArchivo(id_pgc, id_pgc_file, id_user, archivo, datos) {
 
 //esta funcion elimina el archivo, primero de la bd y despues de firebase
 async function eliminarArchivo(id_pgc, id_pgc_file, id_user) {
-  await verificarPertenencia(id_pgc, id_user);
+  const { pgc } = await verificarPertenencia(id_pgc, id_user);
+  verificarNoTerminado(pgc);
 
   const archivo_existente = await pgcArchivoRepository.buscarPorId(id_pgc_file);
   if (!archivo_existente || archivo_existente.id_pgc !== Number(id_pgc)) {
     throw crearError("Archivo no encontrado", 404);
   }
-
+  
   await pgcArchivoRepository.eliminar(id_pgc_file);
   await borrarArchivoFirebase(archivo_existente.storage_path);
 }
