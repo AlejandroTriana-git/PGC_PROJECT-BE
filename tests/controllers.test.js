@@ -1,3 +1,6 @@
+// Entorno de prueba sin MySQL ni Firebase. Los imports de src/ son dinámicos (await import)
+// para que se carguen DESPUÉS de que el helper reemplace db.js y firebaseConfig.js.
+import './helpers/entornoDePrueba.js';
 import { jest } from '@jest/globals';
 import request from 'supertest';
 

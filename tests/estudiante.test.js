@@ -1,7 +1,11 @@
+// Entorno de prueba sin MySQL ni Firebase. Los imports de src/ son dinámicos (await import)
+// para que se carguen DESPUÉS de que el helper reemplace db.js y firebaseConfig.js.
+import './helpers/entornoDePrueba.js';
+import { usuariosPrueba } from './helpers/dbFalsa.js';
 import request from 'supertest';
 import express from 'express';
-import estudianteRoutes from '../src/routes/estudianteRoutes.js';
-import authRoutes from '../src/routes/authRoutes.js';
+const { default: estudianteRoutes } = await import('../src/routes/estudianteRoutes.js');
+const { default: authRoutes } = await import('../src/routes/authRoutes.js');
 
 const app = express();
 app.use(express.json());
@@ -12,8 +16,8 @@ let token = '';
 
 beforeAll(async () => {
     const login = await request(app).post('/api/auth/login').send({
-        correo: "davidfernandogonzalez@cundinamarcau.edu.co",
-        contrasena: "Estudiante123!"
+        correo: usuariosPrueba.estudiante.correo,
+        contrasena: usuariosPrueba.estudiante.contrasena
     });
     token = login.body.token;
 });

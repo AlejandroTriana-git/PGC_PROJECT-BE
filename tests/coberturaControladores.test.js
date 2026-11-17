@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+// Entorno de prueba sin MySQL ni Firebase (los imports de src/ de este archivo ya son dinámicos)
+import './helpers/entornoDePrueba.js';
 
 // Mock dinámico para authService que incluye todas las funciones posibles (login, logout, etc.)
 jest.unstable_mockModule('../src/services/authService.js', () => ({

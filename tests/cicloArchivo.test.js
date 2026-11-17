@@ -1,6 +1,9 @@
+// Entorno de prueba sin MySQL ni Firebase. Los imports de src/ son dinámicos (await import)
+// para que se carguen DESPUÉS de que el helper reemplace db.js y firebaseConfig.js.
+import './helpers/entornoDePrueba.js';
 import request from 'supertest';
 import express from 'express';
-import verificarToken from '../src/middlewares/autenticarMiddleware.js';
+const { default: verificarToken } = await import('../src/middlewares/autenticarMiddleware.js');
 
 const app = express();
 app.use(express.json());
