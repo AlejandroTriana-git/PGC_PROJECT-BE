@@ -13,6 +13,7 @@ El frontend (HTML, CSS y JS puro) está desplegado en `https://pgcfe.vercel.app`
 | Base de datos | MySQL (`mysql2`, pool de conexiones, procedimientos almacenados) |
 | Autenticación | JWT (`jsonwebtoken`) + contraseñas con `bcryptjs` |
 | Archivos | `multer` (memoria) + Firebase Storage (`firebase-admin`) |
+| Correos | `nodemailer` (plantilla HTML corporativa) |
 | Pruebas | Jest + Supertest |
 | Calidad | ESLint + SonarCloud |
 | Metodología | Ágil(marco de trabajo scrum + kanban) |
@@ -146,6 +147,10 @@ Crea un archivo `.env` en la raíz (no se sube al repositorio). Guíate por `.en
 | `JWT_EXPIRES_IN` | Duración del token, por ejemplo `2h` |
 | `FIREBASE_STORAGE_BUCKET` | Bucket de Firebase Storage |
 | `GOOGLE_APPLICATION_CREDENTIALS` | JSON de la cuenta de servicio de Firebase en una sola línea (despliegue). En local se puede usar el archivo `src/config/service-account.json` |
+| `MAIL_HOST` / `MAIL_PORT` / `MAIL_SECURE` | Servidor SMTP usado para enviar los correos (`MAIL_SECURE=true` solo con el puerto 465) |
+| `MAIL_USER` / `MAIL_PASSWORD` | Credenciales de la cuenta que envía los correos |
+| `MAIL_FROM` | Remitente que ve el usuario, ej. `"PGC - Gestion de Proyectos <no-responder@pgc.edu.co>"` |
+| `MAIL_LOGO_URL` | URL del logo que se usa en la plantilla HTML de los correos (opcional) |
 
 > Nunca subas el `.env` ni `service-account.json`: ambos están en `.gitignore`.
 
