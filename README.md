@@ -14,6 +14,7 @@ El frontend (HTML, CSS y JS puro) está desplegado en `https://pgcfe.vercel.app`
 | Autenticación | JWT (`jsonwebtoken`) + contraseñas con `bcryptjs` |
 | Archivos | `multer` (memoria) + Firebase Storage (`firebase-admin`) |
 | Correos | `nodemailer` (plantilla HTML corporativa) |
+| Reportes | `pdfkit` (informe de avance de PGC en PDF) |
 | Pruebas | Jest + Supertest |
 | Calidad | ESLint + SonarCloud |
 | Metodología | Ágil(marco de trabajo scrum + kanban) |
@@ -73,6 +74,8 @@ Todas las rutas empiezan con `/api`. 🔒 = requiere token (`Authorization: Bear
 |---|---|---|---|
 | POST | `/` 🔒 | Estudiante | Crea un PGC |
 | GET | `/search` 🔓 | Todos | Busca PGC (buscador/histórico) |
+| GET | `/informe/general/pdf` 🔒 | Profesor, Administrador | Descarga el informe de avance (todos los ciclos combinados) en PDF |
+| GET | `/informe/ciclos/pdf` 🔒 | Profesor, Administrador | Descarga el informe de avance separado por cada ciclo, en PDF |
 | GET | `/mine` 🔒 | Estudiante | Lista sus PGC |
 | GET | `/pendientes-calificacion` 🔒 | Profesor | PGC por calificar |
 | GET | `/calificados-por-mi` 🔒 | Profesor | PGC que ya calificó |

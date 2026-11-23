@@ -2,7 +2,7 @@
 // Mantiene el mismo logo, colores y estructura para que cualquier correo que se envíe
 // (aprobación, rechazo, etc.) tenga el mismo formato corporativo.
 
-const COLOR_PRIMARIO = '#003366'; // azul institucional
+const COLOR_PRIMARIO = '#00482B'; // azul institucional
 const NOMBRE_INSTITUCION = 'Universidad de Cundinamarca — Gestión de PGC';
 const LOGO_URL = process.env.MAIL_LOGO_URL || 'https://pgcfe.vercel.app/assets/logo.png';
 

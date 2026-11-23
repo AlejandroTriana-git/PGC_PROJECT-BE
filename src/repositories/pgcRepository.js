@@ -369,3 +369,44 @@ export const listarPgcCalificadosPorJurado = async (id_juror) => {
     );
     return rows;
 };
+
+// ============================================
+// Informe de avance de PGC (issue #132)
+// ============================================
+
+//esta funcion cuenta propuestas y pgc por cada ciclo (para el informe general y el de por ciclos)
+//un ciclo sin propuestas igual aparece en el resultado, con todos los conteos en 0
+export const obtenerConteosPorCiclo = async () => {
+    const [filas] = await db.query(
+        `SELECT
+            c.id_cycle,
+            c.name_cycle,
+            COUNT(DISTINCT p.id_proposal) AS total_propuestas,
+            SUM(CASE WHEN p.state_proposal = 'Pendiente de validación' THEN 1 ELSE 0 END) AS pendientes,
+            SUM(CASE WHEN p.state_proposal = 'Aprobada' THEN 1 ELSE 0 END) AS aprobadas,
+            SUM(CASE WHEN p.state_proposal = 'Rechazada' THEN 1 ELSE 0 END) AS rechazadas,
+            SUM(CASE WHEN p.state_proposal = 'Anulada' THEN 1 ELSE 0 END) AS anuladas,
+            COUNT(DISTINCT pg.id_pgc) AS pgc_registrados,
+            SUM(CASE WHEN pg.state_pgc = 'En Proceso' THEN 1 ELSE 0 END) AS en_proceso,
+            SUM(CASE WHEN pg.state_pgc = 'Terminado' THEN 1 ELSE 0 END) AS terminados
+         FROM cycles c
+         LEFT JOIN proposals p ON p.id_cycle = c.id_cycle
+         LEFT JOIN pgc pg ON pg.id_proposal = p.id_proposal
+         GROUP BY c.id_cycle, c.name_cycle
+         ORDER BY c.id_cycle`
+    );
+
+    //mysql2 puede devolver los SUM/COUNT como string segun el driver, aca se asegura que sean numero
+    return filas.map((fila) => ({
+        id_cycle:         fila.id_cycle,
+        name_cycle:       fila.name_cycle,
+        total_propuestas: Number(fila.total_propuestas),
+        pendientes:       Number(fila.pendientes),
+        aprobadas:        Number(fila.aprobadas),
+        rechazadas:       Number(fila.rechazadas),
+        anuladas:         Number(fila.anuladas),
+        pgc_registrados:  Number(fila.pgc_registrados),
+        en_proceso:       Number(fila.en_proceso),
+        terminados:       Number(fila.terminados)
+    }));
+};

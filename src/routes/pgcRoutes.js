@@ -7,7 +7,9 @@ import {
     calificarPgc,
     obtenerCalificaciones,
     listarPgcCalificadosPorJurado,
-    buscarPgc
+    buscarPgc,
+    exportarInformeAvanceGeneralPdf,
+    exportarInformeAvancePorCiclosPdf
 } from '../controllers/pgcController.js';
 import verificarToken from '../middlewares/autenticarMiddleware.js';
 import autorizarRoles from '../middlewares/rolMiddleware.js';
@@ -20,6 +22,10 @@ router.post('/', verificarToken, autorizarRoles('Estudiante'), crearPgc);
 
 // GET /api/pgc/search (publico: cualquiera, con o sin sesion, puede buscar en el catalogo)
 router.get('/search', verificarTokenOpcional, buscarPgc);
+
+// GET /api/pgc/informe/general/pdf y /informe/ciclos/pdf (solo Profesor/Administrador) — issue #132
+router.get('/informe/general/pdf', verificarToken, autorizarRoles('Profesor', 'Administrador'), exportarInformeAvanceGeneralPdf);
+router.get('/informe/ciclos/pdf', verificarToken, autorizarRoles('Profesor', 'Administrador'), exportarInformeAvancePorCiclosPdf);
 
 // GET /api/pgc/mine (solo Estudiante)
 router.get('/mine', verificarToken, autorizarRoles('Estudiante'), listarMisPgc);
