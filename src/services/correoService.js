@@ -1,28 +1,52 @@
-import transportador from '../config/mailConfig.js';
+import mailConfig from '../config/mailConfig.js';
 import { plantillaBase } from '../templates/correoBaseTemplate.js';
 
-// Remitente que se usa en todos los correos salientes
-const remitente = () => process.env.MAIL_FROM || 'PGC - Gestión de Proyectos <no-responder@pgc.edu.co>';
-
-// Envío genérico de correo con la plantilla HTML corporativa (logo + estilos).
-// Best-effort: si falla (SMTP sin configurar, red, etc.) NO se relanza el error,
-// solo se registra en consola, para que una notificación fallida nunca tumbe el flujo
-// principal (aprobar/rechazar una propuesta, etc.), igual que el borrado best-effort en Firebase.
+// Envío genérico de correo usando la API HTTP de Brevo (puerto 443 HTTPS, sin SMTP 587).
+// Best-effort: si falla, no relanza el error para no interrumpir el flujo principal.
 const enviarCorreo = async ({ destinatario, asunto, cuerpoHtml }) => {
     if (!destinatario) {
         console.warn('⚠️ No se envió correo: falta el destinatario (datos de usuario incompletos)');
         return { enviado: false, motivo: 'sin_destinatario' };
     }
 
+    if (!mailConfig.brevoApiKey) {
+        console.warn('⚠️ No se envió correo: falta BREVO_API_KEY en las variables de entorno');
+        return { enviado: false, motivo: 'sin_api_key' };
+    }
+
+    if (!mailConfig.senderEmail) {
+        console.warn('⚠️ No se envió correo: falta MAIL_SENDER en las variables de entorno');
+        return { enviado: false, motivo: 'sin_remitente' };
+    }
+
     const html = plantillaBase({ titulo: asunto, cuerpoHtml });
 
     try {
-        await transportador.sendMail({
-            from: remitente(),
-            to: destinatario,
-            subject: asunto,
-            html,
+        const respuesta = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'content-type': 'application/json',
+                'api-key': mailConfig.brevoApiKey,
+            },
+            body: JSON.stringify({
+                sender: {
+                    name: mailConfig.senderName,
+                    email: mailConfig.senderEmail,
+                },
+                to: [
+                    { email: destinatario },
+                ],
+                subject: asunto,
+                htmlContent: html,
+            }),
         });
+
+        if (!respuesta.ok) {
+            const detalleError = await respuesta.text();
+            throw new Error(`Brevo HTTP ${respuesta.status}: ${detalleError}`);
+        }
+
         return { enviado: true };
     } catch (error) {
         console.error('❌ Error enviando correo:', error.message);
