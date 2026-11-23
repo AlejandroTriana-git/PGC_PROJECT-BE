@@ -4,7 +4,7 @@
 
 const COLOR_PRIMARIO = '#00482B'; // azul institucional
 const NOMBRE_INSTITUCION = 'Universidad de Cundinamarca — Gestión de PGC';
-const LOGO_URL = process.env.MAIL_LOGO_URL || 'https://pgcfe.vercel.app/assets/logo.png';
+const LOGO_URL = process.env.MAIL_LOGO_URL || 'https://pgcfe.vercel.app/assets/logos/ESCUDO BLANCO.png';
 
 // data: { titulo, cuerpoHtml }
 export const plantillaBase = ({ titulo = '', cuerpoHtml = '' }) => `<!DOCTYPE html>
