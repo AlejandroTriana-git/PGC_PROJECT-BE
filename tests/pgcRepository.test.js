@@ -118,4 +118,32 @@ describe('pgcRepository Completo', () => {
     mockDb.query.mockResolvedValue(rows([]));
     await expect(repo.listarPgcCalificadosPorJurado(1)).resolves.toEqual([]);
   });
+
+  test('obtenerConteosPorCiclo', async () => {
+    mockDb.query.mockResolvedValue(rows([{
+      id_cycle: 1,
+      name_cycle: 'Fundamentación',
+      total_propuestas: '3',
+      pendientes: '1',
+      aprobadas: '1',
+      rechazadas: '1',
+      anuladas: '0',
+      pgc_registrados: '1',
+      en_proceso: '0',
+      terminados: '1'
+    }]));
+    const resultado = await repo.obtenerConteosPorCiclo();
+    expect(resultado).toEqual([{
+      id_cycle: 1,
+      name_cycle: 'Fundamentación',
+      total_propuestas: 3,
+      pendientes: 1,
+      aprobadas: 1,
+      rechazadas: 1,
+      anuladas: 0,
+      pgc_registrados: 1,
+      en_proceso: 0,
+      terminados: 1
+    }]);
+  });
 });

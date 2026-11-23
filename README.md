@@ -13,6 +13,8 @@ El frontend (HTML, CSS y JS puro) está desplegado en `https://pgcfe.vercel.app`
 | Base de datos | MySQL (`mysql2`, pool de conexiones, procedimientos almacenados) |
 | Autenticación | JWT (`jsonwebtoken`) + contraseñas con `bcryptjs` |
 | Archivos | `multer` (memoria) + Firebase Storage (`firebase-admin`) |
+| Correos | `nodemailer` (plantilla HTML corporativa) |
+| Reportes | `pdfkit` (informe de avance de PGC en PDF) |
 | Pruebas | Jest + Supertest |
 | Calidad | ESLint + SonarCloud |
 | Metodología | Ágil(marco de trabajo scrum + kanban) |
@@ -72,6 +74,8 @@ Todas las rutas empiezan con `/api`. 🔒 = requiere token (`Authorization: Bear
 |---|---|---|---|
 | POST | `/` 🔒 | Estudiante | Crea un PGC |
 | GET | `/search` 🔓 | Todos | Busca PGC (buscador/histórico) |
+| GET | `/informe/general/pdf` 🔒 | Profesor, Administrador | Descarga el informe de avance (todos los ciclos combinados) en PDF |
+| GET | `/informe/ciclos/pdf` 🔒 | Profesor, Administrador | Descarga el informe de avance separado por cada ciclo, en PDF |
 | GET | `/mine` 🔒 | Estudiante | Lista sus PGC |
 | GET | `/pendientes-calificacion` 🔒 | Profesor | PGC por calificar |
 | GET | `/calificados-por-mi` 🔒 | Profesor | PGC que ya calificó |
@@ -146,6 +150,10 @@ Crea un archivo `.env` en la raíz (no se sube al repositorio). Guíate por `.en
 | `JWT_EXPIRES_IN` | Duración del token, por ejemplo `2h` |
 | `FIREBASE_STORAGE_BUCKET` | Bucket de Firebase Storage |
 | `GOOGLE_APPLICATION_CREDENTIALS` | JSON de la cuenta de servicio de Firebase en una sola línea (despliegue). En local se puede usar el archivo `src/config/service-account.json` |
+| `MAIL_HOST` / `MAIL_PORT` / `MAIL_SECURE` | Servidor SMTP usado para enviar los correos (`MAIL_SECURE=true` solo con el puerto 465) |
+| `MAIL_USER` / `MAIL_PASSWORD` | Credenciales de la cuenta que envía los correos |
+| `MAIL_FROM` | Remitente que ve el usuario, ej. `"PGC - Gestion de Proyectos <no-responder@pgc.edu.co>"` |
+| `MAIL_LOGO_URL` | URL del logo que se usa en la plantilla HTML de los correos (opcional) |
 
 > Nunca subas el `.env` ni `service-account.json`: ambos están en `.gitignore`.
 

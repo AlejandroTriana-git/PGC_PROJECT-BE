@@ -249,4 +249,21 @@ export const eliminarCategoriasPropuesta = async (connection, id_proposal) => {
 };
 
 
+// ============================================
+// Correos (issue #132): datos para notificar al líder de la propuesta
+// ============================================
+
+// Trae el título de la propuesta y el correo/nombre del líder, para armar el correo de notificación
+export const buscarDatosNotificacionPropuesta = async (id_proposal) => {
+    const [rows] = await db.query(
+        `SELECT p.title_proposal, u.mail_user, u.full_name
+         FROM proposals p
+         INNER JOIN students s ON s.id_student = p.id_leader
+         INNER JOIN users u ON u.id_user = s.id_user
+         WHERE p.id_proposal = ?`,
+        [id_proposal]
+    );
+    return rows[0];
+};
+
 export { buscarPorId, listarPorCicloYEstado };

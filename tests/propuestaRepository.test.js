@@ -70,6 +70,11 @@ describe('propuestaRepository Completo', () => {
     await expect(repo.listarPorCicloYEstado(1, 'Pendiente')).resolves.toHaveLength(1);
   });
 
+  test('buscarDatosNotificacionPropuesta', async () => {
+    mockDb.query.mockResolvedValue(rows([{ title_proposal: 'T', mail_user: 'a@b.com', full_name: 'A' }]));
+    await expect(repo.buscarDatosNotificacionPropuesta(1)).resolves.toMatchObject({ mail_user: 'a@b.com' });
+  });
+
   test('revisarPropuesta', async () => {
     mockConnection.query
       .mockResolvedValueOnce([[]])

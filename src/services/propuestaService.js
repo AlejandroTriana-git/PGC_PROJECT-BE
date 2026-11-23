@@ -8,6 +8,7 @@ import {
     eliminarIntegrantesPropuesta,
 } from '../repositories/propuestaRepository.js';
 import { estaDentroDeLaEtapa, STAGES, encontrarFechasEtapas } from '../validators/ciclosValidator.js';
+import * as correoService from './correoService.js';
 
 // Validar campos obligatorios
 // NOTA: id_cycle ya no se recibe del FE — se obtiene internamente del líder en la BD
@@ -408,6 +409,15 @@ async function aprobarPropuesta(id_proposal, usuario) {
     error.status = codigo;
     throw error;
   }
+
+  //aca se notifica al lider por correo (issue #132): best-effort, si falla no afecta la respuesta
+  try {
+    const datosNotificacion = await propuestaRepository.buscarDatosNotificacionPropuesta(id_proposal);
+    await correoService.enviarCorreoPropuestaAprobada(datosNotificacion);
+  } catch (err) {
+    console.error('❌ Error en notificación de propuesta aprobada:', err.message);
+  }
+
   return { mensaje };
 }
 //esta funcion rechaza la propuesta.
@@ -423,6 +433,14 @@ const { codigo, mensaje, nuevo_resubmit } = await propuestaRepository.revisarPro
     const error = new Error(mensaje);
     error.status = codigo;
     throw error;
+  }
+
+  //aca se notifica al lider por correo (issue #132): best-effort, si falla no afecta la respuesta
+  try {
+    const datosNotificacion = await propuestaRepository.buscarDatosNotificacionPropuesta(id_proposal);
+    await correoService.enviarCorreoPropuestaRechazada(datosNotificacion, comentario, nuevo_resubmit);
+  } catch (err) {
+    console.error('❌ Error en notificación de propuesta rechazada:', err.message);
   }
 
   return { nuevoResubmitCount: nuevo_resubmit, mensaje };
