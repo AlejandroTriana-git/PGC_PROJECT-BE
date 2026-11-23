@@ -1,4 +1,5 @@
 import * as pgcService from '../services/pgcService.js';
+import * as reporteService from '../services/reporteService.js';
 import { validarBusquedaPgc, normalizarFiltrosBusquedaPgc } from '../validators/busquedaPgcValidator.js';
 
 // ============================================
@@ -82,6 +83,36 @@ export const buscarPgc = async (req, res) => {
         //solo se muestra el mensaje si es un error controlado (trae status), uno de la bd no se le muestra al cliente
         const mensaje = error.status ? (error.mensaje || error.message) : 'Error interno del servidor';
         return res.status(error.status || 500).json({ mensaje });
+    }
+};
+
+// ============================================
+// Informe de avance de PGC (issue #132)
+// ============================================
+
+//GET /api/pgc/informe/general/pdf — descarga el informe general (todos los ciclos combinados)
+export const exportarInformeAvanceGeneralPdf = async (req, res) => {
+    try {
+        const buffer = await reporteService.generarInformeAvanceGeneralPdf();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="informe-avance-general.pdf"');
+        return res.status(200).send(buffer);
+    } catch (error) {
+        console.error('ERROR EXPORTAR INFORME GENERAL PDF:', error);
+        return res.status(500).json({ mensaje: 'Error interno del servidor' });
+    }
+};
+
+//GET /api/pgc/informe/ciclos/pdf — descarga el informe separado por cada ciclo
+export const exportarInformeAvancePorCiclosPdf = async (req, res) => {
+    try {
+        const buffer = await reporteService.generarInformeAvancePorCiclosPdf();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="informe-avance-por-ciclos.pdf"');
+        return res.status(200).send(buffer);
+    } catch (error) {
+        console.error('ERROR EXPORTAR INFORME POR CICLOS PDF:', error);
+        return res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 };
 

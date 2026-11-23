@@ -23,6 +23,7 @@ const mockPgcRepo = {
   buscarCalificacionDeJurado: jest.fn(),
   listarPgcCalificadosPorJurado: jest.fn(),
   existePgcParaPropuesta: jest.fn(),
+  obtenerConteosPorCiclo: jest.fn(),
 };
 jest.unstable_mockModule('../src/repositories/pgcRepository.js', () => mockPgcRepo);
 
@@ -150,6 +151,50 @@ describe('pgcService Completo', () => {
       mockPgcRepo.listarComentariosDelPgc.mockResolvedValue([]);
       mockPgcRepo.calcularPromedioPgc.mockResolvedValue(4.5);
       await expect(pgcService.obtenerCalificaciones(1, 1)).resolves.toBeDefined();
+    });
+  });
+
+  describe('obtenerInformeAvanceGeneral', () => {
+    test('suma los conteos de todos los ciclos en un solo totalizado', async () => {
+      mockPgcRepo.obtenerConteosPorCiclo.mockResolvedValue([
+        { id_cycle: 1, name_cycle: 'Fundamentación', total_propuestas: 3, pendientes: 1, aprobadas: 1, rechazadas: 1, anuladas: 0, pgc_registrados: 1, en_proceso: 0, terminados: 1 },
+        { id_cycle: 2, name_cycle: 'Profundización', total_propuestas: 2, pendientes: 0, aprobadas: 2, rechazadas: 0, anuladas: 0, pgc_registrados: 2, en_proceso: 1, terminados: 1 }
+      ]);
+
+      const totales = await pgcService.obtenerInformeAvanceGeneral();
+
+      expect(totales).toEqual({
+        total_propuestas: 5,
+        pendientes: 1,
+        aprobadas: 3,
+        rechazadas: 1,
+        anuladas: 0,
+        pgc_registrados: 3,
+        en_proceso: 1,
+        terminados: 2
+      });
+    });
+
+    test('devuelve todo en 0 si no hay ciclos', async () => {
+      mockPgcRepo.obtenerConteosPorCiclo.mockResolvedValue([]);
+      await expect(pgcService.obtenerInformeAvanceGeneral()).resolves.toEqual({
+        total_propuestas: 0,
+        pendientes: 0,
+        aprobadas: 0,
+        rechazadas: 0,
+        anuladas: 0,
+        pgc_registrados: 0,
+        en_proceso: 0,
+        terminados: 0
+      });
+    });
+  });
+
+  describe('obtenerInformeAvancePorCiclos', () => {
+    test('devuelve el conteo separado ciclo por ciclo', async () => {
+      const porCiclo = [{ id_cycle: 1, name_cycle: 'Fundamentación', total_propuestas: 3 }];
+      mockPgcRepo.obtenerConteosPorCiclo.mockResolvedValue(porCiclo);
+      await expect(pgcService.obtenerInformeAvancePorCiclos()).resolves.toEqual(porCiclo);
     });
   });
 });

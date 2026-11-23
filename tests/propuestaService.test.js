@@ -14,6 +14,7 @@ const mockPropuestaRepo = {
   eliminarIntegrantesPropuesta: jest.fn(),
   reenviarPropuesta: jest.fn(),
   buscarPropuestaCompletaPorEstudiante: jest.fn(),
+  buscarDatosNotificacionPropuesta: jest.fn(),
 };
 jest.unstable_mockModule('../src/repositories/propuestaRepository.js', () => mockPropuestaRepo);
 
@@ -26,6 +27,14 @@ jest.unstable_mockModule('../src/validators/ciclosValidator.js', () => mockValid
 const mockFileObj = { save: jest.fn(), delete: jest.fn(), getSignedUrl: jest.fn().mockResolvedValue(['url']) };
 jest.unstable_mockModule('../src/config/firebaseConfig.js', () => ({ default: { file: jest.fn(() => mockFileObj) } }));
 
+// Correos (issue #132): se mockea el servicio completo para que aprobar/rechazar
+// no intenten mandar un correo real durante las pruebas
+const mockCorreoService = {
+  enviarCorreoPropuestaAprobada: jest.fn().mockResolvedValue({ enviado: true }),
+  enviarCorreoPropuestaRechazada: jest.fn().mockResolvedValue({ enviado: true }),
+};
+jest.unstable_mockModule('../src/services/correoService.js', () => mockCorreoService);
+
 const service = await import('../src/services/propuestaService.js');
 
 describe('propuestaService Completo', () => {
@@ -34,7 +43,10 @@ describe('propuestaService Completo', () => {
     mockDb.getConnection.mockResolvedValue(mockConnection);
     mockConnection.query.mockResolvedValue([[]]);
     mockValidator.estaDentroDeLaEtapa.mockResolvedValue(true);
-    mockPropuestaRepo.buscarPropuestaActiva.mockResolvedValue(null); 
+    mockPropuestaRepo.buscarPropuestaActiva.mockResolvedValue(null);
+    mockPropuestaRepo.buscarDatosNotificacionPropuesta.mockResolvedValue({
+      mail_user: 'lider@test.com', full_name: 'Lider Test', title_proposal: 'T'
+    });
   });
 
   const data = { title_proposal: 'T', descr_proposal: 'D', problem_proposal: 'P', justification_proposal: 'J', objectives_proposal: 'O', solution_proposal: 'S', integrantes: [], categorias: [1] };

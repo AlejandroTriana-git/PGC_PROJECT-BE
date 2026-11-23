@@ -308,3 +308,37 @@ export const listarPgcCalificadosPorJurado = async (id_juror) => {
     const pgcs = await pgcRepository.listarPgcCalificadosPorJurado(id_juror);
     return pgcs;
 };
+
+// ============================================
+// Informe de avance de PGC (issue #132)
+// ============================================
+
+//esta funcion suma los conteos de todos los ciclos en un solo totalizado, para el informe general
+export const obtenerInformeAvanceGeneral = async () => {
+    const porCiclo = await pgcRepository.obtenerConteosPorCiclo();
+
+    return porCiclo.reduce((totales, ciclo) => ({
+        total_propuestas: totales.total_propuestas + ciclo.total_propuestas,
+        pendientes:       totales.pendientes + ciclo.pendientes,
+        aprobadas:        totales.aprobadas + ciclo.aprobadas,
+        rechazadas:       totales.rechazadas + ciclo.rechazadas,
+        anuladas:         totales.anuladas + ciclo.anuladas,
+        pgc_registrados:  totales.pgc_registrados + ciclo.pgc_registrados,
+        en_proceso:       totales.en_proceso + ciclo.en_proceso,
+        terminados:       totales.terminados + ciclo.terminados
+    }), {
+        total_propuestas: 0,
+        pendientes: 0,
+        aprobadas: 0,
+        rechazadas: 0,
+        anuladas: 0,
+        pgc_registrados: 0,
+        en_proceso: 0,
+        terminados: 0
+    });
+};
+
+//esta funcion devuelve el mismo conteo pero separado ciclo por ciclo, para el informe por ciclos
+export const obtenerInformeAvancePorCiclos = async () => {
+    return pgcRepository.obtenerConteosPorCiclo();
+};

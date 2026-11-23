@@ -13,6 +13,12 @@ const mockPgcService = {
 };
 jest.unstable_mockModule('../src/services/pgcService.js', () => mockPgcService);
 
+const mockReporteService = {
+  generarInformeAvanceGeneralPdf: jest.fn(),
+  generarInformeAvancePorCiclosPdf: jest.fn(),
+};
+jest.unstable_mockModule('../src/services/reporteService.js', () => mockReporteService);
+
 jest.unstable_mockModule('../src/validators/busquedaPgcValidator.js', () => ({
   validarBusquedaPgc: jest.fn().mockReturnValue([]),
   normalizarFiltrosBusquedaPgc: jest.fn().mockReturnValue({}),
@@ -26,7 +32,7 @@ describe('pgcController (Unitario Directo)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     req = { usuario: { id: 1 }, body: {}, params: {}, query: {} };
-    res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    res = { status: jest.fn().mockReturnThis(), json: jest.fn(), setHeader: jest.fn(), send: jest.fn().mockReturnThis() };
   });
 
   test('listarPropuestasAprobadasSinPgc: 200', async () => {
@@ -87,5 +93,33 @@ describe('pgcController (Unitario Directo)', () => {
     mockPgcService.listarPgcCalificadosPorJurado.mockResolvedValue([]);
     await pgcController.listarPgcCalificadosPorJurado(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  test('exportarInformeAvanceGeneralPdf: 200 y envia el PDF', async () => {
+    mockReporteService.generarInformeAvanceGeneralPdf.mockResolvedValue(Buffer.from('%PDF-'));
+    await pgcController.exportarInformeAvanceGeneralPdf(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalled();
+  });
+
+  test('exportarInformeAvanceGeneralPdf: 500 si falla el service', async () => {
+    mockReporteService.generarInformeAvanceGeneralPdf.mockRejectedValue(new Error('fallo'));
+    await pgcController.exportarInformeAvanceGeneralPdf(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+  });
+
+  test('exportarInformeAvancePorCiclosPdf: 200 y envia el PDF', async () => {
+    mockReporteService.generarInformeAvancePorCiclosPdf.mockResolvedValue(Buffer.from('%PDF-'));
+    await pgcController.exportarInformeAvancePorCiclosPdf(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalled();
+  });
+
+  test('exportarInformeAvancePorCiclosPdf: 500 si falla el service', async () => {
+    mockReporteService.generarInformeAvancePorCiclosPdf.mockRejectedValue(new Error('fallo'));
+    await pgcController.exportarInformeAvancePorCiclosPdf(req, res);
+    expect(res.status).toHaveBeenCalledWith(500);
   });
 });
