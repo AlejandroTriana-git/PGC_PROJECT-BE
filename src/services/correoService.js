@@ -43,9 +43,11 @@ const enviarCorreo = async ({ destinatario, asunto, cuerpoHtml }) => {
         });
 
         if (!respuesta.ok) {
-            const detalleError = await respuesta.text();
-            throw new Error(`Brevo HTTP ${respuesta.status}: ${detalleError}`);
-        }
+    // Se limpia el texto de error antes de loguearlo: viene de un servidor externo (Brevo)
+    // y SonarCloud marca como "log injection" meter texto sin filtrar en el log.
+    const detalleError = (await respuesta.text()).replace(/[\r\n]/g, ' ').slice(0, 300);
+    throw new Error(`Brevo HTTP ${respuesta.status}: ${detalleError}`);
+}
 
         return { enviado: true };
     } catch (error) {
